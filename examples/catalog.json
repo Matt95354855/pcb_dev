@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "parts": [
+    {
+      "id": "resistor-0603-demo",
+      "description": "Generic 0603 resistor envelope; not a verified vendor reference",
+      "category": "resistor",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "parameters": {
+        "power_w": 0.1,
+        "resistance_ohm": 330
+      },
+      "status": "review",
+      "source": "illustrative fixture; validate against selected manufacturer datasheet"
+    },
+    {
+      "id": "capacitor-0603-demo",
+      "description": "Generic bypass capacitor envelope; not a verified vendor reference",
+      "category": "capacitor",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "parameters": {
+        "capacitance_f": 1e-07,
+        "voltage_v": 10
+      },
+      "status": "review",
+      "source": "illustrative fixture; capacitance derating must be checked"
+    }
+  ]
+}

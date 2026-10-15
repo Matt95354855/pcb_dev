@@ -1,0 +1,21 @@
+{
+  "replies": [
+    {
+      "content": "Check the declared interfaces, then propose a parameter change on a copy.",
+      "tool_calls": [
+        {"id": "check-1", "name": "check_design", "arguments": {}},
+        {
+          "id": "change-1",
+          "name": "apply_design_patch",
+          "arguments": {
+            "reason": "Explore a 2.1 V LED forward-voltage assumption; engineering review remains required.",
+            "operations": [
+              {"op": "set_parameter", "block": "board.led", "name": "led_forward_v", "value": 2.1}
+            ]
+          }
+        }
+      ]
+    },
+    {"content": "The candidate parameters pass model preflight. Physical parts, native checks and manufacturing qualification remain pending."}
+  ]
+}

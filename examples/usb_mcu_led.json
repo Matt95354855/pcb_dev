@@ -1,0 +1,403 @@
+{
+  "schema_version": 1,
+  "name": "USB-C → 3.3 V · MCU + LED",
+  "version": "0.1.0",
+  "board": {
+    "width_mm": 40,
+    "height_mm": 30,
+    "layers": 2,
+    "manufacturer": "jlcpcb"
+  },
+  "root": {
+    "id": "board",
+    "description": "Nested block architecture demonstration. All library identities are unqualified.",
+    "parameters": {
+      "input_v": 5.0,
+      "logic_v": 3.3
+    },
+    "children": [
+      {
+        "id": "usb",
+        "description": "USB-C power-only interface. Generic preview, CC pull-downs shown.",
+        "ports": [
+          {
+            "id": "vbus",
+            "kind": "power",
+            "direction": "output",
+            "voltage_min": 4.75,
+            "voltage_max": 5.25,
+            "polarity": "positive",
+            "max_current_ma": 500
+          },
+          {
+            "id": "gnd",
+            "kind": "ground",
+            "direction": "passive"
+          }
+        ],
+        "components": [
+          {
+            "id": "connector",
+            "reference": "J1",
+            "value": "USB-C power only",
+            "footprint": "Connector_USB:USB_C_Receptacle_USB2.0_16P",
+            "pins": {
+              "A1": "GND",
+              "A4": "VBUS",
+              "A5": "CC1",
+              "B1": "GND",
+              "B4": "VBUS",
+              "B5": "CC2"
+            },
+            "parameters": {},
+            "position": {
+              "x_mm": 5,
+              "y_mm": 15,
+              "side": "top",
+              "rotation": 0
+            }
+          },
+          {
+            "id": "cc1",
+            "reference": "R1",
+            "value": "5.1k",
+            "footprint": "Resistor_SMD:R_0603_1608Metric",
+            "pins": {
+              "1": "CC1",
+              "2": "GND"
+            },
+            "parameters": {},
+            "position": {
+              "x_mm": 10,
+              "y_mm": 11,
+              "side": "top",
+              "rotation": 0
+            }
+          },
+          {
+            "id": "cc2",
+            "reference": "R2",
+            "value": "5.1k",
+            "footprint": "Resistor_SMD:R_0603_1608Metric",
+            "pins": {
+              "1": "CC2",
+              "2": "GND"
+            },
+            "parameters": {},
+            "position": {
+              "x_mm": 10,
+              "y_mm": 19,
+              "side": "top",
+              "rotation": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "power",
+        "description": "3.3 V linear-regulator functional block; choose and qualify a real regulator.",
+        "depends_on": [
+          "board.usb"
+        ],
+        "parameters": {
+          "load_a": 0.09,
+          "max_dissipation_w": 0.5
+        },
+        "equations": {
+          "dissipation_w": "(input_v - logic_v) * load_a"
+        },
+        "constraints": [
+          {
+            "expression": "dissipation_w < max_dissipation_w",
+            "message": "Regulator dissipation exceeds planning limit"
+          }
+        ],
+        "ports": [
+          {
+            "id": "vin",
+            "kind": "power",
+            "direction": "input",
+            "voltage_min": 4.5,
+            "voltage_max": 5.5,
+            "polarity": "positive",
+            "current_draw_ma": 100
+          },
+          {
+            "id": "vout",
+            "kind": "power",
+            "direction": "output",
+            "voltage_min": 3.25,
+            "voltage_max": 3.35,
+            "polarity": "positive",
+            "max_current_ma": 300
+          },
+          {
+            "id": "gnd",
+            "kind": "ground",
+            "direction": "passive"
+          }
+        ],
+        "components": [
+          {
+            "id": "regulator",
+            "reference": "U1",
+            "value": "LDO_3V3_DEMO",
+            "footprint": "Package_TO_SOT_SMD:SOT-223-3_TabPin2",
+            "pins": {
+              "1": "3V3",
+              "2": "GND",
+              "3": "VBUS"
+            },
+            "parameters": {},
+            "position": {
+              "x_mm": 17,
+              "y_mm": 15,
+              "side": "top",
+              "rotation": 0
+            }
+          },
+          {
+            "id": "input_cap",
+            "reference": "C1",
+            "value": "1u",
+            "footprint": "Capacitor_SMD:C_0603_1608Metric",
+            "pins": {
+              "1": "VBUS",
+              "2": "GND"
+            },
+            "parameters": {
+              "voltage_rating_v": 10,
+              "applied_voltage_v": 5.25,
+              "derating_factor": 0.8
+            },
+            "position": {
+              "x_mm": 14,
+              "y_mm": 10,
+              "side": "top",
+              "rotation": 0
+            }
+          },
+          {
+            "id": "output_cap",
+            "reference": "C2",
+            "value": "10u",
+            "footprint": "Capacitor_SMD:C_0805_2012Metric",
+            "pins": {
+              "1": "3V3",
+              "2": "GND"
+            },
+            "parameters": {
+              "voltage_rating_v": 10,
+              "applied_voltage_v": 3.35,
+              "derating_factor": 0.8
+            },
+            "position": {
+              "x_mm": 20,
+              "y_mm": 10,
+              "side": "top",
+              "rotation": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "mcu",
+        "description": "Generic MCU functional interface and local bypass capacitor. Not a real pinout.",
+        "depends_on": [
+          "board.power"
+        ],
+        "ports": [
+          {
+            "id": "vcc",
+            "kind": "power",
+            "direction": "input",
+            "voltage_min": 3.0,
+            "voltage_max": 3.6,
+            "polarity": "positive",
+            "current_draw_ma": 80
+          },
+          {
+            "id": "gnd",
+            "kind": "ground",
+            "direction": "passive"
+          },
+          {
+            "id": "gpio",
+            "kind": "digital",
+            "direction": "output",
+            "voltage_min": 0,
+            "voltage_max": 3.35,
+            "logic_standard": "3v3"
+          }
+        ],
+        "components": [
+          {
+            "id": "device",
+            "reference": "U2",
+            "value": "MCU_DEMO",
+            "footprint": "Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.1x3.1mm",
+            "pins": {
+              "1": "3V3",
+              "2": "GND",
+              "3": "LED_GPIO"
+            },
+            "parameters": {},
+            "position": {
+              "x_mm": 28,
+              "y_mm": 15,
+              "side": "top",
+              "rotation": 0
+            }
+          },
+          {
+            "id": "bypass",
+            "reference": "C3",
+            "value": "100n",
+            "footprint": "Capacitor_SMD:C_0603_1608Metric",
+            "pins": {
+              "1": "3V3",
+              "2": "GND"
+            },
+            "parameters": {
+              "voltage_rating_v": 10,
+              "applied_voltage_v": 3.35,
+              "derating_factor": 0.8
+            },
+            "position": {
+              "x_mm": 25,
+              "y_mm": 10,
+              "side": "top",
+              "rotation": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "led",
+        "description": "Indicator LED with a current limiting resistor.",
+        "depends_on": [
+          "board.power",
+          "board.mcu"
+        ],
+        "parameters": {
+          "led_forward_v": 2.0,
+          "led_current_a": 0.004
+        },
+        "equations": {
+          "series_resistance_ohm": "(logic_v - led_forward_v) / led_current_a"
+        },
+        "constraints": [
+          {
+            "expression": "series_resistance_ohm > 0",
+            "message": "Supply must exceed the LED forward voltage"
+          }
+        ],
+        "ports": [
+          {
+            "id": "vcc",
+            "kind": "power",
+            "direction": "input",
+            "voltage_min": 3.0,
+            "voltage_max": 3.6,
+            "polarity": "positive",
+            "current_draw_ma": 10
+          },
+          {
+            "id": "gnd",
+            "kind": "ground",
+            "direction": "passive"
+          },
+          {
+            "id": "control",
+            "kind": "digital",
+            "direction": "input",
+            "voltage_min": 0,
+            "voltage_max": 3.6,
+            "logic_standard": "3v3"
+          }
+        ],
+        "components": [
+          {
+            "id": "series",
+            "reference": "R3",
+            "value": "330",
+            "footprint": "Resistor_SMD:R_0603_1608Metric",
+            "pins": {
+              "1": "LED_GPIO",
+              "2": "LED_ANODE"
+            },
+            "parameters": {
+              "power_rating_w": 0.1,
+              "power_dissipation_w": 0.006
+            },
+            "position": {
+              "x_mm": 33,
+              "y_mm": 12,
+              "side": "top",
+              "rotation": 0
+            }
+          },
+          {
+            "id": "indicator",
+            "reference": "D1",
+            "value": "LED_RED_DEMO",
+            "footprint": "LED_SMD:LED_0603_1608Metric",
+            "pins": {
+              "1": "GND",
+              "2": "LED_ANODE"
+            },
+            "parameters": {},
+            "position": {
+              "x_mm": 35,
+              "y_mm": 18,
+              "side": "top",
+              "rotation": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "connections": [
+    {
+      "source": "board.usb.vbus",
+      "target": "board.power.vin",
+      "net": "VBUS"
+    },
+    {
+      "source": "board.power.vout",
+      "target": "board.mcu.vcc",
+      "net": "3V3"
+    },
+    {
+      "source": "board.power.vout",
+      "target": "board.led.vcc",
+      "net": "3V3"
+    },
+    {
+      "source": "board.usb.gnd",
+      "target": "board.power.gnd",
+      "net": "GND"
+    },
+    {
+      "source": "board.usb.gnd",
+      "target": "board.mcu.gnd",
+      "net": "GND"
+    },
+    {
+      "source": "board.usb.gnd",
+      "target": "board.led.gnd",
+      "net": "GND"
+    },
+    {
+      "source": "board.mcu.gpio",
+      "target": "board.led.control",
+      "net": "LED_GPIO"
+    }
+  ],
+  "metadata": {
+    "purpose": "functional-model-preview",
+    "fabrication_ready": false,
+    "note": "Generic functional symbols/pads. Manufacturer part numbers, physical pinouts, library footprints, routing, ESD and actual device behavior require qualification."
+  }
+}

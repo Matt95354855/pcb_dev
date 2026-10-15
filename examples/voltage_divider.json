@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "name": "Voltage divider explicit nominal simulation",
+  "version": "0.1.0",
+  "board": {"width_mm": 40, "height_mm": 25, "layers": 2, "manufacturer": "jlcpcb"},
+  "root": {
+    "id": "board",
+    "description": "Two ideal 10 kohm resistors divide a declared 5 V ideal bench input without an output load.",
+    "ports": [],
+    "components": [
+      {
+        "id": "bench_input",
+        "reference": "J1",
+        "value": "5 V bench input, ideal source assumption",
+        "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+        "pins": {"1": "VIN", "2": "GND"},
+        "parameters": {"spice": {"kind": "V", "value": 5, "pins": ["1", "2"], "ac_magnitude": 1}},
+        "position": {"x_mm": 5, "y_mm": 10, "rotation": 0, "side": "top"}
+      }
+    ],
+    "children": [
+      {
+        "id": "divider",
+        "description": "Nominal ratio only; source impedance and external output load are omitted explicitly.",
+        "ports": [],
+        "components": [
+          {
+            "id": "upper",
+            "reference": "R1",
+            "value": "10k",
+            "footprint": "Resistor_SMD:R_0603_1608Metric",
+            "pins": {"1": "VIN", "2": "VOUT"},
+            "parameters": {"spice": {"kind": "R", "value": "10k", "pins": ["1", "2"], "tolerance": 0.01}},
+            "position": {"x_mm": 16, "y_mm": 10, "rotation": 0, "side": "top"}
+          },
+          {
+            "id": "lower",
+            "reference": "R2",
+            "value": "10k",
+            "footprint": "Resistor_SMD:R_0603_1608Metric",
+            "pins": {"1": "VOUT", "2": "GND"},
+            "parameters": {"spice": {"kind": "R", "value": 10000, "pins": {"positive": "1", "negative": "2"}, "tolerance": 0.01}},
+            "position": {"x_mm": 26, "y_mm": 10, "rotation": 90, "side": "top"}
+          }
+        ]
+      }
+    ]
+  },
+  "connections": [],
+  "metadata": {
+    "fabrication_ready": false,
+    "simulation": {
+      "nominal_only": true,
+      "expected_unloaded_op_vout_v": 2.5,
+      "assumptions": ["J1 is an explicitly declared ideal voltage source at the bench input.", "The divider output is unloaded.", "Tolerance values are recorded but not simulated as corners or distributions.", "Physical footprints and routing remain unqualified."],
+      "ground_nets": ["GND"],
+      "analyses": {
+        "op": {"kind": "op"},
+        "dc": {"kind": "dc", "source": "J1", "start": 0, "stop": 5, "step": 0.5}
+      }
+    }
+  }
+}

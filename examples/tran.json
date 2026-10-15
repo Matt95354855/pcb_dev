@@ -1,0 +1,6 @@
+{
+  "kind": "tran",
+  "step_s": 0.00001,
+  "stop_s": 0.01,
+  "uic": true
+}

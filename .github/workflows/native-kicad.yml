@@ -1,0 +1,79 @@
+name: Native KiCad compatibility
+
+on:
+  push:
+    paths:
+      - 'src/pcb_dev/**'
+      - 'tests/test_backends.py'
+      - 'tests/test_spice_generation.py'
+      - 'examples/rc_filter.json'
+      - 'examples/voltage_divider.json'
+      - '.github/workflows/native-kicad.yml'
+  pull_request:
+    paths:
+      - 'src/pcb_dev/**'
+      - 'tests/test_backends.py'
+      - 'tests/test_spice_generation.py'
+      - 'examples/rc_filter.json'
+      - 'examples/voltage_divider.json'
+      - '.github/workflows/native-kicad.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-smoke:
+    name: Native KiCad ${{ matrix.kicad }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        kicad: ['9.0.9', '10.0.2']
+    # Official image. Exact release tags are immutable under KiCad's tag policy:
+    # https://hub.docker.com/r/kicad/kicad
+    # Sources: https://gitlab.com/kicad/packaging/kicad-docker
+    container:
+      image: kicad/kicad:${{ matrix.kicad }}
+      options: --user root
+    env:
+      PYTHONPATH: src
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backend regression tests
+        run: python3 -m unittest discover -s tests -p test_backends.py -v
+      - name: Native grammar, global nets, exports and expected unrouted DRC
+        run: python3 -m pcb_dev.backends.smoke --output build/native-smoke
+      - name: Preserve native reports and outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-kicad-${{ matrix.kicad }}
+          path: build/native-smoke
+          if-no-files-found: warn
+          retention-days: 14
+
+  ngspice-smoke:
+    name: Native Ngspice RC transient
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: src
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install optional simulation engine
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ngspice
+      - name: Check real waveform and two-pass measurement result
+        run: python3 -m pcb_dev.backends.smoke_simulation --output build/native-ngspice
+      - name: Preserve engine inputs, waveform and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-ngspice
+          path: build/native-ngspice
+          if-no-files-found: warn
+          retention-days: 14
