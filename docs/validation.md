@@ -69,10 +69,11 @@ La qualification complète décrite dans [la feuille de route](roadmap.md) reste
 
 ## Incrément 0.3.0 : interfaces physiques et NC explicites
 
-La tranche ports/broches a passé la
-[matrice Python](https://github.com/Matt95354855/pcb_dev/actions/runs/38742266293)
-et les [tests natifs](https://github.com/Matt95354855/pcb_dev/actions/runs/38742266190)
-au commit `b5662b9`. Les deux moteurs KiCad 9.0.9/10.0.2 confirment les quatre
+La tranche ports/broches compte **382 tests locaux réussis** et Ruff sans erreur.
+Elle a passé la
+[matrice Python](https://github.com/Matt95354855/pcb_dev/actions/runs/38742926977)
+et les [tests natifs](https://github.com/Matt95354855/pcb_dev/actions/runs/38742927220)
+au commit `d6be89d`. Les deux moteurs KiCad 9.0.9/10.0.2 confirment les quatre
 ports réalisés en strict, la parité avec bibliothèques, le rejet d'une broche
 déplacée sur le mauvais net et l'ERC sans violation ni contrôle ignoré.
 

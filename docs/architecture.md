@@ -104,9 +104,7 @@ Le statut `library-draft` reste distinct d'une qualification de fabrication. Les
 sources de bibliothèque ne prouvent ni le pinout de la référence commerciale, ni
 la valeur des composants, ni le routage, ni les règles réelles du fabricant.
 
-## Mesures de réussite
-
-### ADR 007 — Intention physique explicite et preuves NC séparées
+## ADR 007 — Intention physique explicite et preuves NC séparées
 
 `Port.net` et `Port.pin_bindings` expriment une intention vers les broches du même
 bloc. Les anciens ports restent abstraits ; un mode strict exige une réalisation
@@ -121,6 +119,8 @@ avec des pads sans net. Le parseur général conserve son comportement strict.
 Les hash de l'export netlist, du schéma et du PCB sont reliés aux étapes natives ;
 une modification entre étapes bloque le gate. Aucune de ces preuves ne certifie
 le cuivre, une datasheet ou le procédé fabricant.
+
+## Mesures de réussite
 
 À ce stade : entrées invalides rejetées, exemples incorrects bloqués, paramètres
 résolus de façon stable, tests de non-régression et aperçus reproductibles.
