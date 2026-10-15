@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 — 2026-10-15
+
+- Add complete explicit bindings to pinned real KiCad symbols and footprints,
+  preserving electrical pin types, pads, holes, courtyard and silkscreen geometry.
+- Generate autonomous local symbol/footprint tables and stable references/nets;
+  require supported single-unit symbols and top-side placement with no generic fallback.
+- Capture and bundle exact source bytes, SHA-256 pins, licenses and attribution
+  for reproducible offline reconstruction.
+- Add `build --bindings`, a distinct unqualified `library-draft` status, an official
+  KiCad connector/resistor fixture, and native geometry/connectivity smoke checks.
+- Keep external 3D model references inert in placed footprints and retain explicit
+  unrouted/physical-qualification blockers.
+
 ## 0.1.1 — 2026-10-15
 
 - Preserve LF bytes on Windows so generated KiCad manifest hashes match the files.

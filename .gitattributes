@@ -1,0 +1,6 @@
+# Stable source bytes across Linux, macOS and Windows checkouts.
+* text=auto eol=lf
+
+# These files are SHA-256-pinned inputs, including licenses and registries.
+# Store/check out their exact bytes; never rewrite their line endings.
+examples/library_divider/** -text

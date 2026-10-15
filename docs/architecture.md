@@ -87,6 +87,23 @@ GPU loué n'est imposé par le format de design.
 | `pipeline`, `artifacts` | Aperçus, documentation et intégrité des fichiers |
 | `cli`, `web` | Interface de commande et revue locale |
 
+## ADR 006 — Bibliothèques explicites et brouillon autonome
+
+Une construction peut utiliser un fichier de liaisons distinct du modèle pour
+associer chaque composant à un symbole et à une empreinte KiCad épinglés. Les
+sources sont lues une fois, vérifiées par hash et capturées avec les licences.
+La construction copie ce snapshot dans les artifacts, ce qui permet une reprise
+hors ligne sans dépendre de la bibliothèque installée sur un autre ordinateur.
+
+Les types électriques et la géométrie de bibliothèque sont conservés. Les unités,
+conversions et transformations non prises en charge sont refusées. Aucun mélange
+silencieux avec des pads génériques n'est autorisé. Les modèles 3D externes restent
+des données de référence : ils ne sont pas résolus automatiquement dans le PCB généré.
+
+Le statut `library-draft` reste distinct d'une qualification de fabrication. Les
+sources de bibliothèque ne prouvent ni le pinout de la référence commerciale, ni
+la valeur des composants, ni le routage, ni les règles réelles du fabricant.
+
 ## Mesures de réussite
 
 À ce stade : entrées invalides rejetées, exemples incorrects bloqués, paramètres

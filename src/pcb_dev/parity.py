@@ -27,8 +27,14 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig")
 
 
-def parse_sexpr(text: str) -> list:
+def parse_sexpr(text: str, *, preserve_quotes: bool = False) -> list:
     """Bounded data parser for KiCad expressions. Nothing is evaluated."""
+    if preserve_quotes:
+        from .sexpr import SExprError, parse_quoted
+        try:
+            return parse_quoted(text)
+        except SExprError as exc:
+            raise ParityError(str(exc)) from exc
     stack, roots = [], []
     index, tokens = 0, 0
     while index < len(text):

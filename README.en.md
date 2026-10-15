@@ -5,7 +5,7 @@ the evidence behind every check.**
 
 [Français](README.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
 
-Version **0.1 alpha**. Python 3.11+, no third-party runtime dependencies.
+**Alpha**. Python 3.11+, no third-party runtime dependencies.
 KiCad is the CAD backend; this project adds the block model, deterministic checks,
 CLI, review artifacts, and optional engineering-tool adapters.
 
@@ -28,6 +28,19 @@ python -m unittest discover -s tests -v
 Open `build/demo/index.html` for an offline block viewer. KiCad preview files are
 in `build/demo/kicad/`. Every build requires a new output directory and refuses
 to overwrite existing work.
+
+For a draft using actual pinned KiCad library symbols and footprint geometry:
+
+```sh
+pcb-dev build examples/library_divider/design.json \
+  --bindings examples/library_divider/bindings.json --output build/library-divider
+pcb-dev verify build/library-divider
+```
+
+Every component needs a complete binding; missing sources never fall back to
+generic geometry. Sources, hash pins, licenses, and attribution are bundled for
+offline reconstruction. The initial implementation supports single-unit symbols
+and top-side placement. See the [library generation guide](docs/library-generation.md).
 
 ## Implemented scope
 
@@ -63,7 +76,9 @@ or operational failure, `130` interrupted.
 
 ## Engineering status
 
-Generated symbols and pads are **generic previews**, not qualified physical parts.
+Default generated symbols and pads are **generic previews**, not qualified physical parts.
+The optional library-backed mode preserves real library geometry and pin types;
+part qualification, routing and fabrication approval remain pending.
 The MCU example has a fictional demonstration pinout. `build` does not route a board,
 run native ERC/DRC, or approve manufacturing. Checks operate on declared data;
 they cannot infer missing datasheet limits or actual device behavior.
@@ -87,7 +102,8 @@ closed. Native checks alone cannot qualify manufacturing. Python adapter tests
 are separate from native KiCad CI. See [backend documentation](docs/backends.md),
 [security](SECURITY.md), and [contribution guidelines](CONTRIBUTING.md).
 
-No supplier order, GPU rental, or model API request runs by default. MIT license.
+No supplier order, GPU rental, or model API request runs by default. Code: MIT.
+Vendored KiCad library data retains its [upstream licenses and attribution](examples/library_divider/ATTRIBUTION.md).
 
 Further docs: [blocks/packages](docs/blocks.md), [libraries](docs/libraries.md),
 [SPICE](docs/spice.md), [agent](docs/agent.md), [model endpoints](docs/providers.md).

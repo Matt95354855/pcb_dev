@@ -1,0 +1,70 @@
+{
+  "license_sources": [
+    {
+      "file": "KICAD-LIBRARIES-LICENSE.md",
+      "sha256": "45d2bce75e5a4208f5afb01b8fb2c406e700371c4fe2b5f5cd5c443d46db4d8f",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/a9012d8971ef2ea3243ffc9f19a5b4f153d8b334/LICENSE.md"
+    },
+    {
+      "file": "CC-BY-SA-4.0.txt",
+      "sha256": "00ba11b9a22d453aed299954eaca389d8efef441a4673d84e2dc4ae10ebc7ca5",
+      "upstream_url": "https://gitlab.com/kicad/code/kicad/-/raw/9.0.9/LICENSE.CC-BY-SA-4.0"
+    }
+  ],
+  "schema_version": 1,
+  "sources": [
+    {
+      "alias": "symbol-device",
+      "file": "libraries/Device.kicad_sym",
+      "license": "CC-BY-SA-4.0 WITH KiCad-Libraries-Exception",
+      "modification": "Extracted only top-level symbol 'R'; library header and selected symbol bytes unchanged. Other symbols omitted.",
+      "repository": "https://gitlab.com/kicad/libraries/kicad-symbols",
+      "selected_symbol": "R",
+      "sha256": "a0ec28bb5873b2fe8d6ac8cbc5bdd7de8718f3b64053b9378acb6dcebba6f676",
+      "upstream_commit": "a9012d8971ef2ea3243ffc9f19a5b4f153d8b334",
+      "upstream_path": "Device.kicad_sym",
+      "upstream_sha256": "972f851ebf7c10dfe97eefd5d847406154b18ee6158013bd19165477d6364abd",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/a9012d8971ef2ea3243ffc9f19a5b4f153d8b334/Device.kicad_sym"
+    },
+    {
+      "alias": "symbol-connectors",
+      "file": "libraries/Connector_Generic.kicad_sym",
+      "license": "CC-BY-SA-4.0 WITH KiCad-Libraries-Exception",
+      "modification": "Extracted only top-level symbol 'Conn_01x02'; library header and selected symbol bytes unchanged. Other symbols omitted.",
+      "repository": "https://gitlab.com/kicad/libraries/kicad-symbols",
+      "selected_symbol": "Conn_01x02",
+      "sha256": "1f090506088e197b30f25a0658ed5e551da7395712a69103bdeb93bf79560028",
+      "upstream_commit": "a9012d8971ef2ea3243ffc9f19a5b4f153d8b334",
+      "upstream_path": "Connector_Generic.kicad_sym",
+      "upstream_sha256": "c44a0a561694b37a58027539b4e215067f64b5789cd7855bc001890dc484d51b",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/a9012d8971ef2ea3243ffc9f19a5b4f153d8b334/Connector_Generic.kicad_sym"
+    },
+    {
+      "alias": "footprint-r0603",
+      "file": "libraries/R_0603_1608Metric.kicad_mod",
+      "license": "CC-BY-SA-4.0 WITH KiCad-Libraries-Exception",
+      "modification": "Unmodified exact upstream file bytes.",
+      "repository": "https://gitlab.com/kicad/libraries/kicad-footprints",
+      "selected_symbol": null,
+      "sha256": "4704c9ccd300f50c721cdc6a7a1f3e06f9f1df0b6142a98b8600d00de1182a28",
+      "upstream_commit": "e515f1c3213317d436e492c8c06620ef4caca84e",
+      "upstream_path": "Resistor_SMD.pretty/R_0603_1608Metric.kicad_mod",
+      "upstream_sha256": "4704c9ccd300f50c721cdc6a7a1f3e06f9f1df0b6142a98b8600d00de1182a28",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-footprints/-/raw/e515f1c3213317d436e492c8c06620ef4caca84e/Resistor_SMD.pretty/R_0603_1608Metric.kicad_mod"
+    },
+    {
+      "alias": "footprint-header",
+      "file": "libraries/PinHeader_1x02_P2.54mm_Vertical.kicad_mod",
+      "license": "CC-BY-SA-4.0 WITH KiCad-Libraries-Exception",
+      "modification": "Unmodified exact upstream file bytes.",
+      "repository": "https://gitlab.com/kicad/libraries/kicad-footprints",
+      "selected_symbol": null,
+      "sha256": "ec752bbcecf855e3d852409e516965b03a5a461abf45002765cb482266cdf973",
+      "upstream_commit": "e515f1c3213317d436e492c8c06620ef4caca84e",
+      "upstream_path": "Connector_PinHeader_2.54mm.pretty/PinHeader_1x02_P2.54mm_Vertical.kicad_mod",
+      "upstream_sha256": "ec752bbcecf855e3d852409e516965b03a5a461abf45002765cb482266cdf973",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-footprints/-/raw/e515f1c3213317d436e492c8c06620ef4caca84e/Connector_PinHeader_2.54mm.pretty/PinHeader_1x02_P2.54mm_Vertical.kicad_mod"
+    }
+  ],
+  "upstream_release": "9.0.0"
+}

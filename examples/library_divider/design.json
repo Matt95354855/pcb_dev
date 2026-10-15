@@ -1,0 +1,86 @@
+{
+  "board": {
+    "height_mm": 60,
+    "layers": 2,
+    "manufacturer": "jlcpcb",
+    "width_mm": 80
+  },
+  "connections": [],
+  "metadata": {
+    "datasheet_pinout_verified": false,
+    "fixture": "library-backed-generation",
+    "manufacturing_qualified": false,
+    "note": "Real library symbols and footprints; no MPN selection, routing, production approval or measured electrical behavior."
+  },
+  "name": "Pinned_KiCad_Library_Divider",
+  "root": {
+    "components": [
+      {
+        "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+        "id": "j1",
+        "pins": {
+          "1": "VIN",
+          "2": "GND"
+        },
+        "position": {
+          "rotation": 90,
+          "side": "top",
+          "x_mm": 10,
+          "y_mm": 15
+        },
+        "reference": "J1",
+        "value": "Conn_01x02"
+      },
+      {
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "id": "r1",
+        "pins": {
+          "1": "VIN",
+          "2": "VOUT"
+        },
+        "position": {
+          "rotation": 90,
+          "side": "top",
+          "x_mm": 35,
+          "y_mm": 20
+        },
+        "reference": "R1",
+        "value": "10k"
+      },
+      {
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "id": "r2",
+        "pins": {
+          "1": "VOUT",
+          "2": "GND"
+        },
+        "position": {
+          "rotation": 270,
+          "side": "top",
+          "x_mm": 55,
+          "y_mm": 35
+        },
+        "reference": "R2",
+        "value": "10k"
+      }
+    ],
+    "constraints": [
+      {
+        "expression": "0 < vout_v < vin_v",
+        "message": "Divider output must remain between ground and input in the declared ideal equation."
+      }
+    ],
+    "description": "Native connectivity/geometry fixture using pinned official KiCad library data, not a qualified manufactured circuit.",
+    "equations": {
+      "vout_v": "vin_v * lower_ohm / (upper_ohm + lower_ohm)"
+    },
+    "id": "board",
+    "parameters": {
+      "lower_ohm": 10000,
+      "upper_ohm": 10000,
+      "vin_v": 5
+    }
+  },
+  "schema_version": 1,
+  "version": "0.2.0"
+}

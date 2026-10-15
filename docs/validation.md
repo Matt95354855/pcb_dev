@@ -18,6 +18,11 @@ KiCad, Ngspice ou Freerouting réel n'était installé localement. Les workflows
 GitHub exécutent séparément KiCad 9/10 et Ngspice ; leurs résultats sont visibles
 dans [GitHub Actions](https://github.com/Matt95354855/pcb_dev/actions).
 
+La base publiée **0.1.1** a ensuite passé toute la matrice Python Linux/macOS/Windows
+([exécution CI](https://github.com/Matt95354855/pcb_dev/actions/runs/38706705614)) et les
+tests natifs KiCad 9.0.9, KiCad 10.0.2 et Ngspice
+([exécution native](https://github.com/Matt95354855/pcb_dev/actions/runs/38706705683)).
+
 Le smoke KiCad attend des violations de connexions non routées sur l'aperçu.
 Son succès signifie que les fichiers se chargent, que les nets sont conservés
 et que les constats natifs sont correctement retenus. Il ne signifie pas que

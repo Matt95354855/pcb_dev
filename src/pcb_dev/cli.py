@@ -38,6 +38,8 @@ def _parser() -> argparse.ArgumentParser:
     build = sub.add_parser("build", help="Build a checked model preview, not a fabrication release")
     build.add_argument("design", type=Path)
     build.add_argument("--output", type=Path, required=True)
+    build.add_argument("--bindings", type=Path,
+                       help="Use complete pinned KiCad library bindings instead of generic symbols/pads")
     graph = sub.add_parser("graph", help="Show dependency order and impact of a block change")
     graph.add_argument("design", type=Path)
     graph.add_argument("--impact", metavar="BLOCK_PATH")
@@ -222,8 +224,9 @@ def main(argv: list[str] | None = None) -> int:
             print(text, end="" if text.endswith("\n") else "\n")
             return int(report.blocking)
         if args.command == "build":
-            result = build_preview(args.design, args.output)
-            print(f"Preview built: {result['output']}\nFabrication approval: pending native checks and library qualification")
+            result = build_preview(args.design, args.output, bindings=args.bindings)
+            label = "Library draft" if result["kind"] == "library-draft" else "Preview"
+            print(f"{label} built: {result['output']}\nFabrication approval: pending native checks and physical qualification")
         elif args.command == "graph":
             design = load_design(args.design)
             order = dependency_order(design)

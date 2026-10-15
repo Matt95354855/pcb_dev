@@ -16,11 +16,12 @@ et conserver les preuves des contrôles.**
 de blocs imbriqués, un moteur de vérification déterministe, une CLI et des adaptateurs
 pour les outils EDA. Le moteur CAO reste KiCad.
 
-**Version 0.1 alpha : les fichiers générés sont des aperçus fonctionnels.** Les symboles
-et les pads génériques illustrent les connexions ; ils ne représentent pas des
-composants physiques qualifiés. L'exemple MCU utilise un pinout de démonstration.
-Aucune carte routée, validation électrique réelle ou autorisation de fabrication
-n'est livrée par la commande `build`.
+**Version alpha : la construction produit des brouillons non fabricables.** Par défaut,
+les symboles et pads sont génériques. Avec `--bindings`, le générateur utilise des
+symboles et empreintes de bibliothèques KiCad réelles, épinglées par hash. Leur
+géométrie de bibliothèque ne vaut pas qualification du composant sélectionné.
+L'exemple MCU conserve un pinout de démonstration. La commande `build` ne livre
+ni carte routée ni autorisation de fabrication.
 
 ## Démarrage en deux minutes
 
@@ -47,6 +48,19 @@ connexion réseau. Les fichiers KiCad se trouvent dans `build/demo/kicad/`.
 
 Le répertoire de sortie doit être nouveau : une construction n'écrase jamais un
 répertoire existant. Pour reconstruire, choisir par exemple `--output build/demo-v2`.
+
+Pour construire un diviseur résistif avec des symboles et empreintes KiCad réels :
+
+```sh
+pcb-dev build examples/library_divider/design.json \
+  --bindings examples/library_divider/bindings.json --output build/library-divider
+pcb-dev verify build/library-divider
+```
+
+Ce mode exige une liaison complète de chaque composant, vérifie les sources et
+copie les bibliothèques avec leurs licences dans l'archive. Il prend en charge les
+symboles à une unité et le placement sur la face supérieure. Aucune liaison absente
+ne déclenche de remplacement générique. Voir le [guide de génération depuis les bibliothèques](docs/library-generation.md).
 
 ```sh
 # Deux erreurs intentionnelles : codes de sortie 1
@@ -75,7 +89,7 @@ pcb-dev archive build/demo --output build/demo-preview.zip
 | Puissance | Somme des charges par net transitif, capacité des sources et limites déclarées des composants |
 | Ressources | Adresses I²C, dépendances de séquencement, délais déclarés, invalidation de blocs gelés |
 | Traçabilité | Rapports JSON/Markdown, empreintes SHA-256, dérogations humaines liées au design exact |
-| KiCad | Aperçus `.kicad_sch`, `.kicad_pcb`, projet, règles et netlist ; adaptateur natif ERC/DRC et exports |
+| KiCad | Schéma/PCB génériques ou bibliothèques épinglées, projet autonome, règles et netlist ; adaptateur natif ERC/DRC et exports |
 | Fabrication | BOM générale/JLCPCB, CPL indicatif, profils de planification conservateurs, estimation largeur/chute de tension |
 | Artifacts | Construction dans un répertoire temporaire, manifeste d'intégrité et ZIP reproductible |
 | Revue | Visionneuse HTML locale par bloc et documentation du design générée |
@@ -141,8 +155,8 @@ Le jalon cible de la todo list est une carte USB-C/3,3 V/MCU/LED avec des réfé
 réelles, un schéma et des empreintes qualifiés, un routage, ERC/DRC à zéro et des
 Gerber/BOM/CPL relus. Il n'est **pas encore atteint**.
 
-Les priorités suivantes sont l'intégration des bibliothèques KiCad réelles au générateur, le lien contrôlé
-entre pins et ports, la génération hiérarchique du schéma, le placement/routage,
+Les priorités suivantes sont le lien contrôlé entre pins et ports, les symboles multiunités,
+le placement double face, la génération hiérarchique du schéma, le placement/routage,
 les règles fabricant révisées et la relecture des exports. Les connecteurs fournisseurs,
 l'extraction de datasheets, le GPU cloud et les modèles IA ne sont pas provisionnés.
 Voir [l'état détaillé de chaque phase](docs/roadmap.md).
@@ -161,5 +175,6 @@ vérifie l'exemple. Les tests natifs KiCad sont définis séparément. Lire
 [les décisions d'architecture](docs/architecture.md) avant de modifier une porte
 de validation.
 
-Licence [MIT](LICENSE). Aucun service payant ni envoi de design n'est nécessaire
+Code sous licence [MIT](LICENSE) ; les bibliothèques KiCad incluses conservent leurs
+[licences et attributions](examples/library_divider/ATTRIBUTION.md). Aucun service payant ni envoi de design n'est nécessaire
 pour le parcours de démarrage.

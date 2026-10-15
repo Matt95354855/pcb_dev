@@ -1,7 +1,7 @@
 # État de la todo list PCB
 
 Référence : « Outil de création de PCB — Todolist complète », fournie au démarrage.
-État de la version **0.1.0 alpha**, au 15 octobre 2026. Les numéros ci-dessous
+État de la version **0.2.0 alpha**, au 15 octobre 2026. Les numéros ci-dessous
 reprennent cette liste pour permettre une reprise précise.
 
 **Livré** décrit le comportement logiciel disponible et testé. **Partiel**
@@ -16,7 +16,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | A1–A5 | Livré pour l'alpha | Petites équipes, basse tension 2–4 couches, KiCad, Python, JSON/CLI et revue locale ; ADR dans architecture.md |
 | A6 | À faire | Analyse comparative détaillée du code atopile/tscircuit |
 | A7 | Livré | Packaging, licence MIT, tests, conventions de contribution et workflows CI |
-| A8 | Partiel | Diagnostic KiCad 9/10, versions de conteneurs épinglées ; compatibilité native à confirmer par exécution CI |
+| A8 | Livré pour versions testées | Diagnostic et conteneurs épinglés ; smoke natif 9.0.9/10.0.2 passé sur la base 0.1.1, incréments testés séparément |
 | A9 | Livré comme critères | Reproductibilité du modèle ; jalon physique ERC/DRC zéro encore ouvert |
 
 ## B — Modèle de blocs
@@ -58,7 +58,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | --- | --- | --- |
 | D1 | Partiel | Catalogue JSON local + inventaires de bibliothèques ; liens SPICE/datasheet/3D unifiés à compléter |
 | D2 | À faire | API fournisseurs, cache distant et quotas |
-| D3 | Partiel | Inspection/import local de symboles et empreintes, sources épinglées ; intégration complète au générateur à faire |
+| D3 | Partiel | Import et génération avec bibliothèques réelles épinglées, tables locales autonomes ; multiunités/double face/3D à compléter |
 | D4–D5 | À faire | Extraction datasheet et générateur IPC-7351 |
 | D6 | Partiel | Contrôles géométriques limités de pads/courtyard/silkscreen ; pas de conformité IPC revendiquée |
 | D7 | À faire | Alignement et validation des vrais modèles STEP |
@@ -69,7 +69,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 
 | IDs | État | Preuve / suite |
 | --- | --- | --- |
-| E1–E2 | Partiel | Schéma plat autonome avec symboles génériques et disposition stable |
+| E1–E2 | Partiel | Schéma plat autonome générique ou vrais symboles épinglés ; hiérarchie et mise en page avancée à faire |
 | E3 | Livré | Noms explicites stables de nets globaux |
 | E4 | Partiel | Références explicites stables ; annotation automatique à ajouter |
 | E5 | À faire | Import d'un schéma en arbre de blocs |
@@ -85,7 +85,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 
 | IDs | État | Preuve / suite |
 | --- | --- | --- |
-| G1–G5 | Partiel | PCB générique, contour rectangulaire, 2/4 couches, règles de planification, centres déclarés ; vrai stackup, placement et empreintes à compléter |
+| G1–G5 | Partiel | PCB générique ou vraies empreintes épinglées, contour rectangulaire, 2/4 couches et centres déclarés ; vrai stackup/placement/routage à compléter |
 | G6 | Partiel | Formule externe IPC-2221 documentée ; pas de solveur IPC-2152 ni validation du cuivre réel |
 | G7 | À faire | Paires différentielles/impédance/longueurs |
 | G8 | Partiel | DSN → Freerouting épinglé → SES ; export DSN depuis KiCad et import SES non automatisés |
@@ -155,7 +155,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 ## Prochain incrément recommandé
 
 1. Faire passer le smoke KiCad réel et corriger les incompatibilités constatées.
-2. Sélectionner des références commerciales réelles et leurs bibliothèques qualifiées.
+2. Sélectionner des références commerciales réelles et qualifier les bibliothèques déjà importables.
 3. Lier chaque port de bloc aux pins physiques et générer un schéma hiérarchique.
 4. Produire le premier layout routé, puis démontrer ERC/DRC zéro.
 5. Vérifier DFM et relire les Gerber/BOM/CPL exportés avant d'ouvrir la livraison finale.
