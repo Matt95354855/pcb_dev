@@ -1,5 +1,10 @@
 # pcb_dev
 
+**Vision produit : décrivez votre idée dans un prompt ; un LLM local clarifie le besoin,
+propose des améliorations et pilote les outils de conception.** Le noyau technique
+est disponible ; ce parcours conversationnel complet est la prochaine priorité.
+Voir la [vision et le plan du manager local](docs/prompt-first.md).
+
 **Concevoir un PCB comme un arbre de blocs, vérifier les interfaces avant le layout,
 et conserver les preuves des contrôles.**
 

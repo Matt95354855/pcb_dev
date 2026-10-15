@@ -1,5 +1,10 @@
 # pcb_dev
 
+**Product direction: describe an idea in a prompt; a local LLM clarifies the brief,
+suggests improvements and manages the design tools.** The engineering core exists;
+the complete conversational workflow is the next priority. See the
+[local manager product plan](docs/prompt-first.md).
+
 **Model a PCB as nested blocks, validate interfaces before layout, and preserve
 the evidence behind every check.**
 

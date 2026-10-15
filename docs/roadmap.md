@@ -1,5 +1,10 @@
 # État de la todo list PCB
 
+La priorité produit est désormais le parcours **prompt → brief → manager LLM local
+→ outils → preuves → itérations**. Le JSON est un format interne. Le noyau ci-dessous
+sert cette expérience ; son orchestration conversationnelle reste à construire.
+Voir la [vision détaillée](prompt-first.md).
+
 Référence : « Outil de création de PCB — Todolist complète », fournie au démarrage.
 État de la version **0.3.0 alpha**, au 15 octobre 2026. Les numéros ci-dessous
 reprennent cette liste pour permettre une reprise précise.
