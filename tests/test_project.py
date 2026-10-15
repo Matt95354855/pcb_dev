@@ -315,3 +315,35 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(state["usage"]["qwen_tokens"], 600)
         history = payloads[-1]["messages"]
         self.assertTrue(any(item.get("tool_calls", [{}])[0].get("function", {}).get("name") == "build_draft" for item in history))
+
+    def test_tool_arguments_are_redacted_before_hashes_and_artifact_generation(self):
+        secret = "private-configured-key-value"
+        value = design()
+        value["metadata"] = {"api_key": secret, "notes": secret}
+        provider = Provider([call("brief", "propose_brief", brief(summary=secret)), ModelReply("approve"),
+                             call("create", "create_design", {"design": value}), call("build", "build_draft", {}), ModelReply("done")])
+        provider.redaction_secrets = (secret,)
+        manager = ProjectManager(self.directory, provider)
+        proposal = manager.send_message("prototype")
+        self.assertEqual(proposal["brief"]["summary"], "[REDACTED]")
+        state = manager.approve_brief(expected_hash=proposal["brief"]["hash"])
+        self.assertEqual(state["status"], "review_ready")
+        for artifact in state["artifacts"]:
+            self.assertNotIn(secret.encode(), manager.artifact_path(artifact["relative_path"]).read_bytes())
+        self.assertEqual(ProjectManager(self.directory, Provider()).snapshot(), state)
+
+    def test_question_defers_later_tools_in_same_batch_even_if_prior_brief_was_approved(self):
+        manager, provider = self.ready()
+        before = manager.snapshot()["design"]
+        provider.replies = [ModelReply(tool_calls=(
+            ToolCall("questions", "ask_questions", {"questions": ["Quelle charge maximale ?"]}),
+            ToolCall("restore", "propose_brief", brief()),
+            ToolCall("patch", "apply_design_patch", {"reason": "Must await the answer", "operations": [{"op": "set_parameter", "block": "board", "name": "current", "value": 10}]}),
+        ))]
+        state = manager.send_message("Précisons la charge")
+        self.assertEqual(state["status"], "awaiting_input")
+        self.assertFalse(state["brief"]["approved"])
+        self.assertEqual(state["design"], before)
+        results = [json.loads(message["content"]) for message in manager._state["messages"] if message.get("role") == "tool"]
+        self.assertTrue(results[-1]["deferred"])
+        self.assertTrue(results[-2]["deferred"])

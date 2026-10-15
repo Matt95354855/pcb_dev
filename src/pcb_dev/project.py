@@ -13,7 +13,7 @@ from pathlib import Path
 import threading
 from typing import Any
 
-from .agent import Budget, ModelReply, ToolCall, redact
+from .agent import Budget, ModelReply, ToolCall, _arguments, redact
 from .model import Design
 from .project_store import ProjectBusyError, ProjectError, ProjectStore, clone, digest
 from .project_tools import ProjectTools, TOOLS
@@ -320,9 +320,18 @@ class ProjectManager:
                 before = _progress(self._state)
                 stop = False
                 for call in reply.tool_calls:
+                    if stop:
+                        result = {"ok": False, "deferred": True, "error": "Waiting for a human answer; this subsequent tool was not executed."}
+                        self._state["messages"].append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result)})
+                        self._save("tool_deferred_for_human")
+                        continue
                     candidate = clone(self._state)
                     try:
-                        result, requested_stop = self.tools.execute(candidate, call)
+                        # Parse strictly before redaction (duplicate JSON keys
+                        # must not be normalized away), then sanitize before
+                        # hashes or any engineering file can be produced.
+                        safe_call = ToolCall(call.id, call.name, self._clean(_arguments(call)))
+                        result, requested_stop = self.tools.execute(candidate, safe_call)
                         self._state = candidate
                         self._state.setdefault("tool_failures", {}).pop(call.name, None)
                         result = {"ok": True, "result": result}

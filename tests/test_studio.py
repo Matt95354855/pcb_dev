@@ -325,8 +325,8 @@ class StudioHTTPTests(unittest.TestCase):
 
     def test_browser_assets_render_model_text_as_text_and_keep_credentials_in_memory(self):
         root = Path(__file__).resolve().parents[1] / "src/pcb_dev/web"
-        script = (root / "studio.js").read_text()
-        html = (root / "studio.html").read_text()
+        script = (root / "studio.js").read_text(encoding="utf-8")
+        html = (root / "studio.html").read_text(encoding="utf-8")
         self.assertIn("textContent", script)
         for unsafe in ("innerHTML", "outerHTML", "insertAdjacentHTML", "eval(", "localStorage", "sessionStorage", "document.write"):
             self.assertNotIn(unsafe, script)
