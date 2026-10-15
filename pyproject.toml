@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pcb-dev"
-version = "0.3.0"
+version = "0.4.0"
 description = "Hierarchical PCB design models, deterministic preflight checks, and gated KiCad workflows"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,7 +29,7 @@ Issues = "https://github.com/Matt95354855/pcb_dev/issues"
 where = ["src"]
 
 [tool.setuptools.package-data]
-pcb_dev = ["data/*.json", "web/*.html"]
+pcb_dev = ["data/*.json", "web/*.html", "web/*.js", "web/*.css"]
 
 [tool.ruff]
 target-version = "py311"

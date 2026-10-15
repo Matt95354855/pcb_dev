@@ -1,0 +1,17 @@
+{
+  "model": "REPLACE_WITH_YOUR_ACTUAL_CLAUDE_MODEL_ID",
+  "endpoint": "https://api.anthropic.com",
+  "api_key_env": "ANTHROPIC_API_KEY",
+  "allow_network": true,
+  "allowed_hosts": ["api.anthropic.com"],
+  "context_window": 200000,
+  "max_output_tokens": 2048,
+  "timeout_s": 30,
+  "max_response_bytes": 1048576,
+  "max_requests": 16,
+  "max_total_tokens": 128000,
+  "count_margin_tokens": 1024,
+  "count_margin_ratio": 0.1,
+  "supports_tools": false,
+  "supports_parallel_tool_calls": false
+}

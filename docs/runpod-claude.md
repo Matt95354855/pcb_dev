@@ -25,27 +25,32 @@ nécessaires. Auto-hébergé ne signifie pas loopback. Si l'application et le se
 tournent ensemble sur la même machine, une configuration loopback distincte peut
 conserver le mode hors ligne du client.
 
-Après configuration explicite, le self-test de protocole peut vérifier un premier
-appel d'outil. Il ne prouve pas la compétence de conception du modèle. Le parcours
-actuel `agent-run` exige encore un design préexistant ; le démarrage depuis un
-prompt seul est la prochaine étape décrite dans [la vision produit](prompt-first.md).
+Après configuration explicite, `pcb-dev model-check --config chemin/qwen.json`
+vérifie un premier appel d'outil (ajouter `--allow-network` pour un endpoint distant).
+Ce test consomme de l'inférence et ne prouve pas la compétence de conception.
+Le [studio](studio.md) démarre désormais depuis un prompt sans design préalable ;
+`agent-run` reste disponible pour travailler sur un design existant.
 
-## Claude et répartition des rôles
+## Qwen manager, Claude sur demande et au plus 10 % des tokens
 
-L'utilisateur envisage une clé Claude API. Le rôle reste à choisir : Qwen manager
-avec revue Claude ponctuelle, ou Claude manager avec tâches déléguées à Qwen.
-Aucun basculement automatique ni envoi de projet à Claude n'est configuré.
+Qwen pilote le projet. Claude intervient uniquement après une action humaine
+explicite pour un cas difficile, jamais en bascule automatique. Le connecteur natif
+utilise l'API Messages d'Anthropic et garde les clés dans l'environnement. La revue
+est textuelle et n'exécute aucun outil ; elle est fournie à Qwen comme donnée.
 
-Le connecteur actuel ne parle pas nativement l'API Messages d'Anthropic. Son
-adaptateur devra convertir les messages, `tool_use` et `tool_result` vers le
-contrat interne, préserver les budgets et valider les arguments. Une clé Claude
-ne doit pas être injectée directement dans le gabarit Qwen.
-Référence : [API Messages et outils Claude](https://platform.claude.com/docs/en/api/messages/create).
+Le plafond est mesuré en tokens par projet, pas en tâches ou en temps. Le registre
+compte les entrées et sorties réelles Qwen/Claude et le cache Claude ; les estimations
+Qwen et la démonstration n'accordent aucun crédit. Une réservation conservative
+précède l'appel Claude, avec blocage en cas de consommation inconnue ou supérieure
+à la réserve. Le registre persiste après redémarrage et révision du design.
+Voir la [politique de tokens](claude-policy.md) pour la formule et les limites des
+estimations du fournisseur.
 
-La répartition retenue devra conserver les mêmes outils et critères de preuve,
-avec une politique explicite de routage, un budget par fournisseur et la
-traçabilité des décisions. Ajouter un fournisseur n'améliore pas automatiquement
-les poids de Qwen : l'évaluation, la mémoire et un éventuel entraînement restent
-des mécanismes distincts.
+Les gabarits [Qwen studio](../examples/studio-qwen.json) et
+[Claude optionnel](../examples/studio-claude.json) sont à adapter. Une clé Claude
+ne doit pas être injectée dans le gabarit Qwen. L'utilisateur renseigne ses clés
+dans l'environnement du Pod ; aucun secret n'est requis dans le dépôt ou le chat.
 
-Ces fichiers ne provisionnent aucun GPU et n'effectuent aucun appel d'inférence.
+Ajouter un fournisseur n'améliore pas les poids de Qwen : mémoire structurée,
+meilleurs prompts, évaluation et éventuel entraînement sont des mécanismes distincts.
+Ces fichiers ne provisionnent aucun GPU et ne lancent aucune inférence par défaut.

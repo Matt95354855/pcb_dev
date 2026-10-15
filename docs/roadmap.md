@@ -2,11 +2,12 @@
 
 La priorité produit est désormais le parcours **prompt → brief → manager LLM local
 → outils → preuves → itérations**. Le JSON est un format interne. Le noyau ci-dessous
-sert cette expérience ; son orchestration conversationnelle reste à construire.
+sert cette expérience ; le studio orchestre désormais la première boucle complète,
+avec validation humaine du brief et reprise persistante.
 Voir la [vision détaillée](prompt-first.md).
 
 Référence : « Outil de création de PCB — Todolist complète », fournie au démarrage.
-État de la version **0.3.0 alpha**, au 15 octobre 2026. Les numéros ci-dessous
+État de la version **0.4.0 alpha**, au 15 octobre 2026. Les numéros ci-dessous
 reprennent cette liste pour permettre une reprise précise.
 
 **Livré** décrit le comportement logiciel disponible et testé. **Partiel**
@@ -119,9 +120,9 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 
 | IDs | État | Preuve / suite |
 | --- | --- | --- |
-| J1–J4 | Partiel | Visionneuse hors ligne, arborescence, ports colorés, constats par bloc et CLI d'impact ; édition/navigation CAO interactive à faire |
+| J1–J4 | Partiel | Studio conversationnel, brief/plan/contrôles, visionneuse hors ligne et aperçu de centres ; édition CAO interactive à faire |
 | J5 | Partiel | Fichiers natifs exportables, aperçu de centres ; pas de viewer CAO intégré complet |
-| J6–J8 | Partiel | Agent à outils bornés, copie transactionnelle, audit/undo ; interface d'acceptation et diff visuel à faire |
+| J6–J8 | Partiel | Manager borné, brief approuvé par hash, corrections transactionnelles et audit ; diff visuel de modifications à faire |
 | J9 | Livré pour le périmètre alpha | CLI checks/build/graph/inspect/archives/paquets/agents/adaptateurs |
 | J10–J11 | À faire | Extension VS Code et collaboration |
 | K1–K3 | Partiel | Tests logiciels, reproductibilité et matrice native 9/10 ; cartes réelles de référence à qualifier |
@@ -141,13 +142,13 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | --- | --- | --- |
 | M1–M8 | À faire | RF, haute vitesse, puissance, HDI, firmware, EMC, normes et commande fabricant |
 | N1.1–N1.4 | Partiel | Protocole fournisseur, chat/tool calling, endpoint local/distant explicite, profil et quotas ; streaming à ajouter |
-| N1.5 | À faire | Routage multi-modèles et bascule |
+| N1.5 | Partiel | Qwen manager et revue Claude sur demande humaine, plafond persistant de 10 % des tokens ; aucune bascule automatique |
 | N1.6–N1.7 | Partiel | Réseau externe interdit par défaut, local loopback, self-test explicite ; isolation OS et benchmark réel à qualifier |
 | N2 et annexes | À faire | Aucun GPU/cloud loué, aucun poids téléchargé, aucun modèle spécifique imposé |
 | N3.1–N3.5 | Livré pour propositions de modèle | Budgets, schémas d'outils, arguments stricts, copies transactionnelles ; pas d'outil coûteux/irréversible exposé |
 | N3.6–N3.7 | Partiel | Réparation de métadonnées, arrêt sans progrès et protection du gel ; réparations CAO natives autonomes à ajouter |
-| N3.8–N3.11 | À faire | Contextes par spécialiste, mémoire persistante et relecteur IA indépendant |
-| N3.12 | Partiel | Traces et sessions sauvegardables ; reprise exacte de conversation à ajouter |
+| N3.8–N3.11 | Partiel | Brief/plan/conversation persistants, revue Claude humaine séparée ; spécialistes et mémoire documentaire à compléter |
+| N3.12 | Livré pour le studio | Reprise de conversation, brief, plan, preuves et registre de tokens ; appels interrompus non rejoués |
 | N4.1–N4.2 | Partiel | Schémas stricts et catalogue disponible ; ancrage fournisseur de chaque référence encore requis |
 | N4.3–N4.6 | À faire | Datasheets sourcées, citations de chaque décision, gabarits experts et banc few-shot physique |
 | N5.1–N5.3 | Livré dans outils exposés | Pas de waiver/gate/export/shell pour le modèle ; données externes traitées comme données |
@@ -155,14 +156,15 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | N5.5 | Partiel | Traces entrées/sorties/outils/décisions avec secrets masqués ; conservation centralisée à ajouter |
 | N5.6 | Partiel | Outils de design sans fichier/réseau/shell ; conteneur système externe requis pour vraie sandbox |
 | N5.7 | Livré pour métadonnées | Refus des régressions et des altérations de gel/exigences protégées |
-| N6–N7 | À faire | Évaluation réelle de modèles et UI de conversation/acceptation |
+| N6–N7 | Partiel | Studio conversationnel et approbation du brief disponibles ; évaluation d'un Qwen réel encore à faire |
 
 ## Prochain incrément recommandé
 
-1. Faire passer le smoke KiCad réel et corriger les incompatibilités constatées.
-2. Sélectionner des références commerciales réelles et qualifier les bibliothèques déjà importables.
-3. Lier chaque port de bloc aux pins physiques et générer un schéma hiérarchique.
-4. Produire le premier layout routé, puis démontrer ERC/DRC zéro.
-5. Vérifier DFM et relire les Gerber/BOM/CPL exportés avant d'ouvrir la livraison finale.
+1. Brancher le Qwen effectivement servi sur le Pod, qualifier ses appels d'outils et ses résultats sur des cas de référence.
+2. Conserver la matrice native KiCad/Ngspice et les preuves d'orchestration du manager.
+3. Sélectionner des références commerciales réelles et qualifier les bibliothèques déjà importables.
+4. Lier chaque port de bloc aux pins physiques et générer un schéma hiérarchique.
+5. Produire le premier layout routé, puis démontrer ERC/DRC zéro.
+6. Vérifier DFM et relire les Gerber/BOM/CPL exportés avant d'ouvrir la livraison finale.
 
 Le nombre de cases couvertes ne remplace pas ces preuves de bout en bout.

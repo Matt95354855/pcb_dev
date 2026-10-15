@@ -1,9 +1,9 @@
 # pcb_dev
 
-**Vision produit : décrivez votre idée dans un prompt ; un LLM local clarifie le besoin,
-propose des améliorations et pilote les outils de conception.** Le noyau technique
-est disponible ; ce parcours conversationnel complet est la prochaine priorité.
-Voir la [vision et le plan du manager local](docs/prompt-first.md).
+**Décrivez votre idée ; Qwen clarifie le besoin, propose un brief et pilote les
+outils de conception dans un studio local.** Conversation, plan et preuves sont
+conservés avec le projet. Claude intervient sur demande humaine, avec un plafond
+de 10 % des tokens par projet. Voir le [guide du studio](docs/studio.md).
 
 **Concevoir un PCB comme un arbre de blocs, vérifier les interfaces avant le layout,
 et conserver les preuves des contrôles.**
@@ -28,6 +28,10 @@ géométrie de bibliothèque ne vaut pas qualification du composant sélectionn�
 L'exemple MCU conserve un pinout de démonstration. La commande `build` ne livre
 ni carte routée ni autorisation de fabrication.
 
+![PCB Studio](docs/images/studio-demo.jpg)
+
+Aperçu du studio en démonstration explicite, sans modèle connecté.
+
 ## Démarrage en deux minutes
 
 Python **3.11 ou plus récent**, Git. Aucun paquet tiers au runtime.
@@ -41,6 +45,17 @@ source .venv/bin/activate
 # Windows PowerShell : .venv\Scripts\Activate.ps1
 python -m pip install -e .
 
+pcb-dev studio --project build/studio-demo --demo
+```
+
+Ouvrir <http://127.0.0.1:8788>, décrire une idée et valider le brief. Le mode démo
+est explicitement scénarisé : il génère une carte générique vide pour essayer
+le parcours, sans modèle connecté. Pour utiliser votre Qwen sur le Pod, voir le
+[guide de configuration et de reprise](docs/studio.md) et le [guide Runpod](docs/runpod-claude.md).
+
+Le noyau reste utilisable directement en ligne de commande :
+
+```sh
 pcb-dev doctor
 pcb-dev check examples/usb_mcu_led.json
 pcb-dev build examples/usb_mcu_led.json --output build/demo
@@ -104,6 +119,8 @@ pcb-dev archive build/demo --output build/demo-preview.zip
 | Revue | Visionneuse HTML locale par bloc et documentation du design générée |
 | Paquets et bibliothèques | Versions exactes, hash, variantes DNP, inventaires de pins/pads et registre local |
 | Simulation | SPICE explicite R/C/L/V/I, adaptateur NgSpice et explorations de tolérances reproductibles |
+| Studio et manager | Prompt sans JSON préalable, brief approuvé, plan, outils de conception, conversation persistante et reprise |
+| Qwen et Claude | Qwen auto-hébergé, revue Claude humaine séparée, comptabilité persistante et plafond de 10 % des tokens |
 | Agent | Fournisseurs interchangeables, outils stricts, budgets, propositions atomiques, exigences protégées et traces masquées |
 
 Les vérifications portent sur les **données déclarées**. Elles ne déduisent pas le
@@ -164,7 +181,8 @@ Le jalon cible de la todo list est une carte USB-C/3,3 V/MCU/LED avec des réfé
 réelles, un schéma et des empreintes qualifiés, un routage, ERC/DRC à zéro et des
 Gerber/BOM/CPL relus. Il n'est **pas encore atteint**.
 
-Les priorités suivantes sont les liaisons hiérarchiques entre pins et ports, les symboles multiunités,
+La priorité produit suivante est de qualifier le Qwen réellement servi sur le Pod.
+Les autres travaux sont les liaisons hiérarchiques entre pins et ports, les symboles multiunités,
 le placement double face, la génération hiérarchique du schéma, le placement/routage,
 les règles fabricant révisées et la relecture des exports. Les connecteurs fournisseurs,
 l'extraction de datasheets, le GPU cloud et les modèles IA ne sont pas provisionnés.

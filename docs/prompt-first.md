@@ -6,9 +6,10 @@ la préparation du projet, son enrichissement, le plan et l'utilisation des outi
 Le modèle de blocs et les fichiers JSON constituent la représentation interne.
 L'utilisateur ne doit pas avoir à les écrire pour démarrer.
 
-Cette page décrit la direction du produit. La version 0.3 fournit le noyau de
-conception, des contrôles et un prototype d'agent à trois outils ; le parcours
-conversationnel complet ci-dessous n'est pas encore implémenté.
+Cette page décrit la direction du produit. Le studio de la version 0.4 fournit
+le démarrage depuis un prompt, le brief approuvé, le plan, la conversation
+persistante et les outils de conception. Voir le [guide utilisable](studio.md).
+La qualification du vrai modèle Qwen et le jalon physique restent ouverts.
 
 ## Parcours attendu
 
@@ -40,12 +41,12 @@ moteurs de calcul ou de CAO.
 
 | Famille d'outils | Responsabilité du moteur | État actuel |
 | --- | --- | --- |
-| Lecture et modification | Modèle structuré, contraintes, transactions et retour arrière | Noyau disponible ; outils agent inspect/check/patch disponibles |
+| Lecture et modification | Modèle structuré, contraintes, transactions et retour arrière | Création et modifications gardées disponibles au manager |
 | Composants et sources | Catalogue, bibliothèques épinglées et preuves datasheet | Données locales et bindings disponibles ; recherche documentaire agent à ajouter |
-| KiCad | Construction, exports, ERC/DRC et parité | Adaptateurs disponibles ; orchestration par le manager à ajouter |
-| Simulation | Modèles explicites et résultats du moteur | Passifs et Ngspice disponibles ; outils agent et modèles actifs à compléter |
+| KiCad | Construction, exports, ERC/DRC et parité | Build et contrôles natifs disponibles au manager |
+| Simulation | Modèles explicites et résultats du moteur | Passifs et Ngspice disponibles au manager ; modèles actifs à compléter |
 | Placement/routage | Géométrie, règles et cuivre réel | Placement initial et adaptateur Freerouting partiels ; cycle complet à fermer |
-| Mémoire de projet | Brief, plan, décisions, preuves et reprise de session | Traces/transactions disponibles ; session produit persistante à créer |
+| Mémoire de projet | Brief, plan, décisions, preuves et reprise de session | Brief, plan, conversation, preuves et reprise persistants |
 
 Chaque retour d'outil doit préciser son statut réel, ses entrées, les hash,
 les fichiers produits et les limites de la preuve. Le manager ne peut pas
@@ -69,15 +70,15 @@ Un résultat de datasheet ou de bibliothèque constitue une source à vérifier,
 pas une instruction adressée au manager. Les ressources externes ne doivent pas
 changer les exigences ou les autorisations du projet.
 
-## Prochaine tranche prioritaire
+## Tranche livrée et qualification suivante
 
-- Démarrer une session depuis un prompt seul, sans design JSON préalable.
-- Produire un brief versionné avec questions, hypothèses et critères de réussite.
-- Persister la conversation, le plan et les décisions pour reprendre le projet.
-- Exposer au manager les outils de construction et de validation déjà disponibles.
+- Livré : démarrage depuis un prompt seul, sans design JSON préalable.
+- Livré : brief versionné, questions, hypothèses et approbation humaine du hash.
+- Livré : conversation, plan et décisions persistants pour reprendre le projet.
+- Livré : outils de construction, preflight, KiCad natif et simulation exposés au manager.
 - Tester réellement un modèle local et mesurer ses appels d'outils sur des cas
   reproductibles avant de revendiquer une autonomie de conception.
-- Présenter une conversation et un aperçu évolutif avec les états « question en
+- Livré : conversation et aperçu évolutif avec les états « question en
   attente », « brouillon », « contrôle réussi », « bloqué » et « preuve manquante ».
 
 Le premier critère d'acceptation est un prompt, ses clarifications et un vrai
@@ -85,4 +86,5 @@ modèle local produisant un brouillon traçable avec des rapports honnêtes. Le 
 de fabrication de la feuille de route reste ensuite une exigence indépendante.
 
 Le déploiement prévu avec Qwen auto-hébergé et un fournisseur Claude optionnel
-est détaillé dans le [guide Runpod/Claude](runpod-claude.md). Les rôles restent à choisir.
+est détaillé dans le [guide Runpod/Claude](runpod-claude.md). Qwen pilote ; Claude
+intervient sur demande humaine avec au plus 10 % des tokens du projet.

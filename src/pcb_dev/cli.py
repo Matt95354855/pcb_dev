@@ -28,6 +28,28 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="pcb-dev", description="Hierarchical PCB design and validation")
     parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="command", required=True)
+    studio = sub.add_parser("studio", help="Start the prompt-first local project manager interface")
+    studio.add_argument("--project", type=Path, required=True)
+    model = studio.add_mutually_exclusive_group(required=True)
+    model.add_argument("--model-config", type=Path)
+    model.add_argument("--model", help="Actual model ID served by your self-hosted endpoint")
+    model.add_argument("--demo", action="store_true", help="Explicit scripted demonstration; no live model")
+    studio.add_argument("--endpoint", default="http://127.0.0.1:8000/v1")
+    studio.add_argument("--model-key-env", help="Environment variable containing the self-hosted server key")
+    studio.add_argument("--context-window", type=int, default=65536)
+    studio.add_argument("--max-output-tokens", type=int, default=4096)
+    studio.add_argument("--max-steps", type=int, default=12)
+    studio.add_argument("--max-tokens", type=int, default=256000)
+    studio.add_argument("--claude-config", type=Path)
+    studio.add_argument("--allow-network", action="store_true")
+    studio.add_argument("--bindings", type=Path, help="Host-selected pinned library bindings, never a model path")
+    studio.add_argument("--host", default="127.0.0.1")
+    studio.add_argument("--port", type=int, default=8788)
+    studio.add_argument("--auth-env", help="Environment variable for the studio access token")
+    studio.add_argument("--public-origin", help="Exact HTTPS origin of your authenticated reverse proxy")
+    model_check = sub.add_parser("model-check", help="Explicitly send one harmless tool-protocol challenge")
+    model_check.add_argument("--config", type=Path, required=True)
+    model_check.add_argument("--allow-network", action="store_true")
     doctor = sub.add_parser("doctor", help="Inspect optional engineering tools")
     doctor.add_argument("--json", action="store_true")
     doctor.add_argument("--require-kicad", action="store_true")
@@ -221,6 +243,18 @@ def _native(args) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "studio":
+            from .studio_launch import launch_studio
+            return launch_studio(args)
+        if args.command == "model-check":
+            from .providers import ChatCompletionsProvider, ProviderConfig
+            from .transactions import read_json
+            provider = ChatCompletionsProvider(ProviderConfig.from_dict(read_json(args.config)))
+            if provider.network_enabled and not args.allow_network:
+                raise ValueError("Remote model self-test requires --allow-network")
+            result = provider.self_test()
+            print(json_text(result), end="")
+            return int(result.get("passed") is not True)
         if args.command == "doctor":
             diagnostic = KiCadBackend().diagnose()
             result = {"pcb_dev": __version__, "python": platform.python_version(),

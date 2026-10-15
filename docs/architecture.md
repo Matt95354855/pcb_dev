@@ -127,3 +127,33 @@ résolus de façon stable, tests de non-régression et aperçus reproductibles.
 Le critère de sortie du MVP physique reste une carte réelle passant ERC et DRC
 natifs sans erreur et accompagnée d'exports relus. Ce critère n'est pas remplacé
 par un nombre de tests Python.
+
+
+## ADR 008 — Studio persistant et Qwen manager
+
+`studio.py` sert les assets locaux et une API JSON bornée. Les actions humaines
+sont exécutées en arrière-plan avec une seule écriture à la fois ; le navigateur
+lit un snapshot détaché. L'approbation transmet le hash du brief affiché pour
+refuser les validations depuis un onglet périmé.
+
+`project.py` orchestre Qwen avec des tours bornés et les outils déclarés dans
+`project_tools.py`. Le brief est approuvé par l'humain avant création ou mutation
+du modèle. Les outils réemploient transactions, preflight, pipeline, KiCad natif
+et Ngspice. Une erreur réelle est renvoyée au modèle ; aucun texte du modèle ne
+crée une preuve. Le contrat du design est exposé comme donnée au manager.
+La session ne possède ni shell ni outil de réseau arbitraire.
+
+`project_store.py` persiste atomiquement l'état courant et un audit chaîné sous
+verrou OS. `quota.py` conserve séparément les tokens rapportés et les réservations
+Claude : changer de révision ne recrée aucun crédit. Les hashes détectent une
+altération relative au journal local ; ils ne constituent pas une signature.
+
+`claude.py` traduit le protocole natif Messages et demande une autorisation pour
+chaque appel. Le manager expose cette revue uniquement à l'action humaine du
+studio. Claude ne reçoit aucun outil dans ce parcours. L'admission repose sur
+le volume de tokens du projet, une estimation majorée et une réserve de sortie ;
+les consommations inconnues bloquent les appels suivants.
+
+La qualification d'un vrai Qwen reste distincte des tests du contrôleur. Les
+smokes du manager utilisent un fournisseur scénarisé explicite avec de vrais
+moteurs KiCad/Ngspice dans la CI. Voir [le guide du studio](studio.md).

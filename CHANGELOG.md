@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 — 2026-10-15
+
+- Add a prompt-first French studio with asynchronous model work, human brief
+  approval, plans, evidence, draft artifacts and persistent project restart.
+- Let a bounded self-hosted Qwen manager create and revise designs and invoke
+  real build, KiCad native-check and passive Ngspice tools with host-owned paths.
+- Add an optional native Claude Messages provider for explicit human reviews;
+  no Qwen-callable Claude tool or automatic fallback is exposed.
+- Persist measured project token usage and advance reservations under a 10%
+  Claude policy, retaining unknown charges and blocking uncertain accounting.
+- Protect studio access with loopback defaults or an explicitly authenticated
+  HTTPS proxy origin, bounded requests and a confined artifact manifest.
+- Preserve draft status and physical qualification blockers. Scripted demos and
+  native-engine orchestration tests do not qualify a real Qwen model.
+
 ## 0.3.0 — 2026-10-15
 
 - Link block ports to explicit global nets and same-block component pins, with

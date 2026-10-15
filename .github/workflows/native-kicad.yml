@@ -60,6 +60,8 @@ jobs:
         run: python3 -m pcb_dev.backends.smoke_physical_ports --output build/native-physical-ports
       - name: Explicit no-connect evidence and strict library-aware parity
         run: python3 -m pcb_dev.backends.smoke_no_connect --output build/native-no-connect
+      - name: Prompt, human brief approval, persistent manager and real KiCad tools
+        run: python3 -m pcb_dev.backends.smoke_project --engine kicad --output build/native-project
       - name: Preserve native reports and outputs
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,6 +72,7 @@ jobs:
             build/native-libraries
             build/native-physical-ports
             build/native-no-connect
+            build/native-project
           if-no-files-found: warn
           retention-days: 14
 
@@ -87,11 +90,15 @@ jobs:
           sudo apt-get install -y --no-install-recommends ngspice
       - name: Check real waveform and two-pass measurement result
         run: python3 -m pcb_dev.backends.smoke_simulation --output build/native-ngspice
+      - name: Persistent manager with real Ngspice simulation
+        run: python3 -m pcb_dev.backends.smoke_project --engine ngspice --output build/project-ngspice
       - name: Preserve engine inputs, waveform and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: native-ngspice
-          path: build/native-ngspice
+          path: |
+            build/native-ngspice
+            build/project-ngspice
           if-no-files-found: warn
           retention-days: 14

@@ -1,9 +1,9 @@
 # pcb_dev
 
-**Product direction: describe an idea in a prompt; a local LLM clarifies the brief,
-suggests improvements and manages the design tools.** The engineering core exists;
-the complete conversational workflow is the next priority. See the
-[local manager product plan](docs/prompt-first.md).
+**Describe your idea; self-hosted Qwen clarifies the brief and manages engineering
+tools in a local studio.** Conversation, plan, evidence and revisions persist with
+the project. Claude provides human-requested reviews with a project-wide 10% token
+ceiling. See the [studio guide](docs/studio.md).
 
 **Model a PCB as nested blocks, validate interfaces before layout, and preserve
 the evidence behind every check.**
@@ -14,6 +14,10 @@ the evidence behind every check.**
 KiCad is the CAD backend; this project adds the block model, deterministic checks,
 CLI, review artifacts, and optional engineering-tool adapters.
 
+![PCB Studio](docs/images/studio-demo.jpg)
+
+Studio preview in explicit scripted demonstration mode, without a connected model.
+
 ## Quick start
 
 ```sh
@@ -23,6 +27,17 @@ python -m venv .venv
 source .venv/bin/activate
 # Windows PowerShell: .venv\Scripts\Activate.ps1
 python -m pip install -e .
+pcb-dev studio --project build/studio-demo --demo
+```
+
+Open <http://127.0.0.1:8788>, enter an idea and approve the brief. The explicit
+scripted demo builds an empty generic board to exercise the workflow; it does
+not design the requested circuit or connect to a model. For real Qwen setup,
+resuming a project and optional Claude reviews, see the [studio guide](docs/studio.md).
+
+The engineering CLI remains available:
+
+```sh
 pcb-dev doctor
 pcb-dev check examples/usb_mcu_led.json
 pcb-dev build examples/usb_mcu_led.json --output build/demo
@@ -48,6 +63,12 @@ offline reconstruction. The initial implementation supports single-unit symbols
 and top-side placement. See the [library generation guide](docs/library-generation.md).
 
 ## Implemented scope
+
+- Prompt-first studio, human brief approval, dependency-aware plan, persistent
+  conversation and guarded design/build/native-check/simulation tools.
+- Self-hosted Qwen manager; separate human-only Claude reviews, persistent actual
+  usage accounting, advance reservations and a 10% project token policy. No real
+  Qwen endpoint or Claude API has yet been qualified by this project.
 
 - Strict versioned JSON with typed ports, nested blocks, explicit dependencies,
   components, DNP flags, and placement declarations.
