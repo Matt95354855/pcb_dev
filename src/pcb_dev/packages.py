@@ -282,6 +282,9 @@ def instantiate_block(package: BlockPackage, *, instance_id: str, reference_pref
         for component in block_data["components"]:
             component["reference"] = reference_prefix + component["reference"]
             component["pins"] = {pin: remap_net(net) for pin, net in component["pins"].items()}
+        for port in block_data["ports"]:
+            if "net" in port:
+                port["net"] = remap_net(port["net"])
         pending.extend(block_data["children"])
     connections = [{"source": _replace_path(c.source, old_root, instance_id),
                     "target": _replace_path(c.target, old_root, instance_id), "net": remap_net(c.net)}

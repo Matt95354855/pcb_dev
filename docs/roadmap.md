@@ -1,7 +1,7 @@
 # État de la todo list PCB
 
 Référence : « Outil de création de PCB — Todolist complète », fournie au démarrage.
-État de la version **0.2.0 alpha**, au 15 octobre 2026. Les numéros ci-dessous
+État de la version **0.3.0 alpha**, au 15 octobre 2026. Les numéros ci-dessous
 reprennent cette liste pour permettre une reprise précise.
 
 **Livré** décrit le comportement logiciel disponible et testé. **Partiel**
@@ -16,7 +16,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | A1–A5 | Livré pour l'alpha | Petites équipes, basse tension 2–4 couches, KiCad, Python, JSON/CLI et revue locale ; ADR dans architecture.md |
 | A6 | À faire | Analyse comparative détaillée du code atopile/tscircuit |
 | A7 | Livré | Packaging, licence MIT, tests, conventions de contribution et workflows CI |
-| A8 | Livré pour versions testées | Diagnostic et conteneurs épinglés ; smoke natif 9.0.9/10.0.2 passé sur la base 0.1.1, incréments testés séparément |
+| A8 | Livré pour versions testées | Diagnostic et conteneurs épinglés ; smoke natif 9.0.9/10.0.2 passé sur la base 0.2.0, incréments testés séparément |
 | A9 | Livré comme critères | Reproductibilité du modèle ; jalon physique ERC/DRC zéro encore ouvert |
 
 ## B — Modèle de blocs
@@ -40,7 +40,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | --- | --- | --- |
 | C1 | Livré pour métadonnées | Tension au pire cas, courant, type, direction, logique, protocole, polarité, impédance |
 | C2–C3 | Partiel | Budgets de courant, calculs déclarés, ordre/délais de séquencement ; comportement réel/échauffement à simuler |
-| C4 | Partiel | Ports requis, absence de source et conflits ; pas de diagnostic exhaustif des pins physiques/pull-ups |
+| C4 | Partiel | Ports requis, réalisation explicite par pins locales, absence de source et conflits ; pull-ups/pinmux/datasheets à compléter |
 | C5 | Partiel | Adresses I²C ; pinmux MCU/DMA/timers à implémenter |
 | C6 | À faire | Règles de découplage par vraie broche et distance de placement |
 | C7 | Livré sur limites fournies | Ratings tension/courant/puissance avec déclassement déclaré |
@@ -101,7 +101,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | --- | --- | --- |
 | I1 | Partiel | DRC JSON natif avec exclusions/contrôles ignorés bloquants ; carte réelle à valider |
 | I2 | Partiel | Inspection d'empreintes limitée ; DFM sur cuivre/masque/perçages réels à faire |
-| I3–I4 | Partiel | Références, valeurs, noms d'empreintes, pin nets modèle/netlist/PCB ; liaison explicite ports ↔ pins et dépendances complètes encore requises |
+| I3–I4 | Partiel | Références, valeurs, noms d'empreintes, types et pin nets modèle/netlist/PCB, NC explicites et liens ports ↔ pins locaux ; exposition hiérarchique et qualification datasheet à compléter |
 | I5–I7 | À faire | Respect des contraintes sur le layout réel |
 | I8 | Partiel | Exports natifs Gerber/Excellon/CPL/STEP ; pas de livraison finale autorisée |
 | I9 | À faire | Réimport et comparaison géométrique des Gerber |

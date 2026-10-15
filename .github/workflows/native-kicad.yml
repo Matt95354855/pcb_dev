@@ -56,6 +56,10 @@ jobs:
         run: python3 -m pcb_dev.backends.smoke --output build/native-smoke
       - name: Pinned real symbols, footprints, native parity and expected unrouted DRC
         run: python3 -m pcb_dev.backends.smoke_libraries --output build/native-libraries
+      - name: Explicit physical interfaces through the public CLI and strict native gate
+        run: python3 -m pcb_dev.backends.smoke_physical_ports --output build/native-physical-ports
+      - name: Explicit no-connect evidence and strict library-aware parity
+        run: python3 -m pcb_dev.backends.smoke_no_connect --output build/native-no-connect
       - name: Preserve native reports and outputs
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,6 +68,8 @@ jobs:
           path: |
             build/native-smoke
             build/native-libraries
+            build/native-physical-ports
+            build/native-no-connect
           if-no-files-found: warn
           retention-days: 14
 

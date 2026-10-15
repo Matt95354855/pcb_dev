@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — 2026-10-15
+
+- Link block ports to explicit global nets and same-block component pins, with
+  exact net consistency, fitted-pin coverage and an opt-in strict CLI/build policy.
+- Include physical net intent in frozen context, prefix it during package
+  instantiation, and protect existing intent in model-facing proposals.
+- Add strict library-aware parity for actual pin names/types, complete electrical
+  pad coverage and explicitly evidenced no-connects; retain the legacy comparator.
+- Add a real-library four-interface divider, CLI native gate and no-connect smoke
+  workflows; retain unrouted DRC blockers and pending manufacturing qualification.
+- Show physical interface coverage in the offline viewer and generated design guide.
+
 ## 0.2.0 — 2026-10-15
 
 - Add complete explicit bindings to pinned real KiCad symbols and footprints,

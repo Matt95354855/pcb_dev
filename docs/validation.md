@@ -66,3 +66,28 @@ la base 0.1.1 ; les critères sont décrits dans le
 [guide de génération](library-generation.md#smoke-natif-reproductible).
 
 La qualification complète décrite dans [la feuille de route](roadmap.md) reste ouverte.
+
+## Incrément 0.3.0 : interfaces physiques et NC explicites
+
+La tranche ports/broches compte **382 tests locaux réussis** et Ruff sans erreur.
+Elle a passé la
+[matrice Python](https://github.com/Matt95354855/pcb_dev/actions/runs/38742926977)
+et les [tests natifs](https://github.com/Matt95354855/pcb_dev/actions/runs/38742927220)
+au commit `d6be89d`. Les deux moteurs KiCad 9.0.9/10.0.2 confirment les quatre
+ports réalisés en strict, la parité avec bibliothèques, le rejet d'une broche
+déplacée sur le mauvais net et l'ERC sans violation ni contrôle ignoré.
+
+Le smoke NC confirme les marqueurs de R1.2/R2.1 dans un export réel, puis rejette
+un nouvel export réel sans marqueur. Les mutations de faux NC et de pad NC
+raccordé sont également rejetées. Le DRC conserve trois connexions non routées
+pour les cas nominal/interfaces et deux pour le cas NC ; aucun de ces résultats
+ne vaut qualification de cuivre ou de fabrication.
+
+Les régressions supplémentaires couvrent l'héritage de symbole avec NC et le
+chaînage de la netlist exportée : un XML modifié après l'export natif bloque le
+gate, en parité standard comme avec bindings. Les revues croisées n'ont trouvé
+aucun autre faux succès concret dans ce périmètre.
+
+Le paquet 0.3 a été installé dans un environnement neuf, le brouillon strict et
+ses 34 fichiers ont été vérifiés. La visionneuse montre 4/4 interfaces réalisées
+et conserve explicitement le statut de brouillon non fabricable.

@@ -76,6 +76,13 @@ or operational failure, `130` interrupted.
 
 ## Engineering status
 
+Ports can declare an exact global net and local component/pin targets.
+`--require-physical-ports` on `check`, `build`, or `native-check` requires every
+declared port to be realized by fitted pins. Contradictory net mappings block
+drafts as well. `native-check --bindings` adds strict real-library pin and
+explicit no-connect parity. See the [physical interface guide](docs/physical-ports.md)
+and [bound parity contract](docs/bound-parity.md). These checks do not qualify a board for manufacturing.
+
 Default generated symbols and pads are **generic previews**, not qualified physical parts.
 The optional library-backed mode preserves real library geometry and pin types;
 part qualification, routing and fabrication approval remain pending.

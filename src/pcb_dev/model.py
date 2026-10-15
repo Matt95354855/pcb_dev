@@ -36,6 +36,12 @@ class Board:
 
 
 @dataclass(slots=True)
+class PinBinding:
+    component: str
+    pin: str
+
+
+@dataclass(slots=True)
 class Port:
     id: str
     kind: str
@@ -49,6 +55,8 @@ class Port:
     required: bool = True
     polarity: str | None = None
     impedance_ohm: float | None = None
+    net: str | None = None
+    pin_bindings: list[PinBinding] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -141,6 +149,21 @@ class Design:
 
     def _validate_references(self) -> None:
         ports = dict(walk_ports(self))
+        for path, block in self.walk_blocks():
+            components = {component.id: component for component in block.components}
+            owners: dict[tuple[str, str], str] = {}
+            for port in block.ports:
+                if port.pin_bindings and port.net is None:
+                    raise ModelError(f"{path}.{port.id}: pin_bindings require an explicit port net")
+                for target in port.pin_bindings:
+                    if target.component not in components:
+                        raise ModelError(f"{path}.{port.id}: pin binding requires a component in the same block: {target.component!r}")
+                    if target.pin not in components[target.component].pins:
+                        raise ModelError(f"{path}.{port.id}: unknown component pin {target.component}.{target.pin}")
+                    key = target.component, target.pin
+                    if key in owners:
+                        raise ModelError(f"{path}.{port.id}: duplicate pin binding {target.component}.{target.pin}; already bound by port {owners[key]!r}")
+                    owners[key] = port.id
         references: dict[str, str] = {}
         for path, component in walk_components(self):
             key = component.reference.casefold()
@@ -212,7 +235,11 @@ def block_to_dict(block: Block, *, include_frozen: bool = True) -> dict[str, Any
                    "max_current_ma": p.max_current_ma, "current_draw_ma": p.current_draw_ma,
                    "logic_standard": p.logic_standard, "protocol": p.protocol,
                    "required": p.required, "polarity": p.polarity,
-                   "impedance_ohm": p.impedance_ohm} for p in block.ports],
+                   "impedance_ohm": p.impedance_ohm,
+                   **({"net": p.net} if p.net is not None else {}),
+                   **({"pin_bindings": [{"component": target.component, "pin": target.pin}
+                                        for target in p.pin_bindings]} if p.pin_bindings else {})}
+                  for p in block.ports],
         "children": [block_to_dict(c, include_frozen=include_frozen) for c in block.children],
         "components": [{"id": c.id, "reference": c.reference, "value": c.value,
                         "footprint": c.footprint, "pins": dict(c.pins),
@@ -271,6 +298,7 @@ def freeze_fingerprint(
     block_nets: dict[str, set[str]] = {path: set() for path in blocks}
     net_blocks: dict[str, set[str]] = {}
     for path, block in blocks.items():
+        block_nets[path].update(port.net for port in block.ports if port.net is not None)
         for component in block.components:
             block_nets[path].update(component.pins.values())
     for connection in design.connections:
@@ -474,6 +502,7 @@ def _port(value: Any, path: str) -> Port:
     obj = _object(value, path, {
         "id", "kind", "direction", "voltage_min", "voltage_max", "max_current_ma",
         "current_draw_ma", "logic_standard", "protocol", "required", "polarity", "impedance_ohm",
+        "net", "pin_bindings",
     }, {"id", "kind", "direction"})
     port = Port(
         id=_identifier(obj["id"], f"{path}.id"),
@@ -488,10 +517,19 @@ def _port(value: Any, path: str) -> Port:
         required=_bool(obj.get("required", True), f"{path}.required"),
         polarity=_optional_string(obj.get("polarity"), f"{path}.polarity"),
         impedance_ohm=_optional_number(obj.get("impedance_ohm"), f"{path}.impedance_ohm", positive=True),
+        net=_optional_string(obj.get("net"), f"{path}.net"),
+        pin_bindings=[_pin_binding(item, f"{path}.pin_bindings[{index}]") for index, item in enumerate(
+            _array(obj.get("pin_bindings", []), f"{path}.pin_bindings"))],
     )
     if port.voltage_min is not None and port.voltage_max is not None and port.voltage_min > port.voltage_max:
         raise ModelError(f"{path}: voltage_min exceeds voltage_max")
     return port
+
+
+def _pin_binding(value: Any, path: str) -> PinBinding:
+    obj = _object(value, path, {"component", "pin"}, {"component", "pin"})
+    return PinBinding(component=_identifier(obj["component"], f"{path}.component"),
+                      pin=_string(obj["pin"], f"{path}.pin", nonempty=True))
 
 
 def _position(value: Any, path: str) -> Position | None:

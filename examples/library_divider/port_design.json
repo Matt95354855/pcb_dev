@@ -1,0 +1,169 @@
+{
+  "board": {
+    "height_mm": 60,
+    "layers": 2,
+    "manufacturer": "jlcpcb",
+    "width_mm": 80
+  },
+  "connections": [
+    {
+      "net": "VIN",
+      "source": "board.source.supply",
+      "target": "board.divider.supply"
+    },
+    {
+      "net": "GND",
+      "source": "board.source.ground",
+      "target": "board.divider.ground"
+    }
+  ],
+  "metadata": {
+    "datasheet_pinout_verified": false,
+    "fixture": "explicit-port-pin-bindings",
+    "manufacturing_qualified": false,
+    "note": "J1 represents a declared external ideal 5 V supply with an assumed 500 mA budget. This fixture does not verify a supply, datasheet or MPN; the resistor load is a declared ideal 0.25 mA."
+  },
+  "name": "Physical_Port_Divider",
+  "root": {
+    "children": [
+      {
+        "components": [
+          {
+            "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+            "id": "j1",
+            "pins": {
+              "1": "VIN",
+              "2": "GND"
+            },
+            "position": {
+              "rotation": 90,
+              "side": "top",
+              "x_mm": 10,
+              "y_mm": 15
+            },
+            "reference": "J1",
+            "value": "Conn_01x02"
+          }
+        ],
+        "description": "Declared external ideal source through J1, not a generated power supply.",
+        "id": "source",
+        "ports": [
+          {
+            "direction": "output",
+            "id": "supply",
+            "kind": "power",
+            "max_current_ma": 500,
+            "net": "VIN",
+            "pin_bindings": [
+              {
+                "component": "j1",
+                "pin": "1"
+              }
+            ],
+            "voltage_max": 5,
+            "voltage_min": 5
+          },
+          {
+            "direction": "passive",
+            "id": "ground",
+            "kind": "ground",
+            "net": "GND",
+            "pin_bindings": [
+              {
+                "component": "j1",
+                "pin": "2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "components": [
+          {
+            "footprint": "Resistor_SMD:R_0603_1608Metric",
+            "id": "r1",
+            "pins": {
+              "1": "VIN",
+              "2": "VOUT"
+            },
+            "position": {
+              "rotation": 90,
+              "side": "top",
+              "x_mm": 35,
+              "y_mm": 20
+            },
+            "reference": "R1",
+            "value": "10k"
+          },
+          {
+            "footprint": "Resistor_SMD:R_0603_1608Metric",
+            "id": "r2",
+            "pins": {
+              "1": "VOUT",
+              "2": "GND"
+            },
+            "position": {
+              "rotation": 270,
+              "side": "top",
+              "x_mm": 55,
+              "y_mm": 35
+            },
+            "reference": "R2",
+            "value": "10k"
+          }
+        ],
+        "depends_on": [
+          "board.source"
+        ],
+        "id": "divider",
+        "ports": [
+          {
+            "current_draw_ma": 0.25,
+            "direction": "input",
+            "id": "supply",
+            "kind": "power",
+            "net": "VIN",
+            "pin_bindings": [
+              {
+                "component": "r1",
+                "pin": "1"
+              }
+            ],
+            "voltage_max": 5.25,
+            "voltage_min": 4.75
+          },
+          {
+            "direction": "passive",
+            "id": "ground",
+            "kind": "ground",
+            "net": "GND",
+            "pin_bindings": [
+              {
+                "component": "r2",
+                "pin": "2"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "expression": "0 < vout_v < vin_v",
+        "message": "Divider output must remain between ground and input in the declared ideal equation."
+      }
+    ],
+    "description": "Block interfaces explicitly bound to pins in the same block; physical component qualification and routing remain pending.",
+    "equations": {
+      "vout_v": "vin_v * lower_ohm / (upper_ohm + lower_ohm)"
+    },
+    "id": "board",
+    "parameters": {
+      "lower_ohm": 10000,
+      "upper_ohm": 10000,
+      "vin_v": 5
+    }
+  },
+  "schema_version": 1,
+  "version": "0.3.0"
+}

@@ -100,10 +100,11 @@ ports obligatoires non connectés et les sorties concurrentes sont signalés.
 }
 ```
 
-Les numéros de pins pointent vers des noms de nets globaux. Les connexions
-de ports et les pins physiques constituent deux déclarations explicites ;
-elles ne sont pas automatiquement inférées l'une de l'autre. La parité
-compare les pins déclarées aux sources CAO, sans certifier un pinout de datasheet.
+Les numéros de pins pointent vers des noms de nets globaux. Les connexions de
+ports et les pins physiques restent explicites. Un port peut déclarer `net` et
+`pin_bindings` pour vérifier leur cohérence exacte, avec un mode strict exigeant
+sa réalisation montée. Voir le [contrat ports/broches](physical-ports.md).
+La parité compare les pins déclarées aux sources CAO, sans certifier un pinout de datasheet.
 
 `fitted: false` exclut le composant des BOM/CPL. Une position absente est
 autorisée dans le modèle, puis omise du CPL indicatif ; le mode strict de

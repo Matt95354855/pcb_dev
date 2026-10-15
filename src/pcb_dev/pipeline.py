@@ -41,7 +41,19 @@ def design_document(design: Design, report, *, library_backed: bool = False) -> 
                 lines.append(f"| {path}.{port.id} | {port.direction} | "
                              f"{port.voltage_min}–{port.voltage_max} | "
                              f"{port.max_current_ma} | {port.current_draw_ma} |")
-    lines += ["", "## Validation", "", report.to_markdown()]
+    lines += ["", "## Declared port-to-pin realization", "",
+              "This mapping checks declared nets and fitted pins; it does not qualify a datasheet or native copper.", "",
+              "| Port | Global net intent | Local component/pin targets |", "| --- | --- | --- |"]
+    def cell(value):
+        return html.escape(str(value)).replace("|", "\\|")
+    for path, block in design.walk_blocks():
+        for port in block.ports:
+            targets = ", ".join(f"{item.component}.{item.pin}" for item in port.pin_bindings)
+            lines.append(f"| {path}.{port.id} | {cell(port.net or 'not declared')} | {cell(targets or 'abstract')} |")
+    coverage = report.metadata.get("physical_ports", {})
+    lines += ["", f"Realized declared ports: {coverage.get('realized_ports', 0)}/{coverage.get('total_ports', 0)} "
+              f"({coverage.get('status', 'unverified')}).", "",
+              "## Validation", "", report.to_markdown()]
     return "\n".join(lines) + "\n"
 
 
@@ -74,7 +86,8 @@ def _bundle_libraries(bound, output: Path) -> None:
         written[key] = (spelling, expected_sha)
 
 
-def build_preview(source: str | Path, output: str | Path, *, bindings: str | Path | None = None) -> dict:
+def build_preview(source: str | Path, output: str | Path, *, bindings: str | Path | None = None,
+                  require_physical_ports: bool = False) -> dict:
     from .backends import generate
     from .expressions import resolve_parameters
 
@@ -95,7 +108,7 @@ def build_preview(source: str | Path, output: str | Path, *, bindings: str | Pat
             raise BuildError("Output cannot contain the library bindings")
         bound = load_bindings(design, bindings)
     kind = "library-draft" if bound is not None else "preview"
-    report = check_design(design)
+    report = check_design(design, require_physical_ports=require_physical_ports)
     if report.blocking:
         raise BuildError("Preflight blocked the build. Run 'pcb-dev check' for the findings.")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -124,6 +137,7 @@ def build_preview(source: str | Path, output: str | Path, *, bindings: str | Pat
         # Do not persist machine-specific absolute output paths in a reproducible build.
         generated = {key: str(Path(path).relative_to(temporary)) for key, path in generated.items()}
         lock = {"schema_version": 1, "pcb_dev_version": __version__, "kind": kind,
+                "physical_ports_required": require_physical_ports,
                 "design_sha256": design.fingerprint(), "runtime_dependencies": [],
                 "native_checks": {"erc": "not_run", "drc": "not_run"},
                 "fabrication_ready": False, "generated": generated,

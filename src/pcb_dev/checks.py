@@ -276,7 +276,7 @@ def _check_ratings(blocks: dict[str, Any], report: CheckReport) -> None:
     report.metadata["component_rating_checks"] = count
 
 
-def check_design(design: Any) -> CheckReport:
+def check_design(design: Any, *, require_physical_ports: bool = False) -> CheckReport:
     """Check declared interfaces, rail budgets, resources and frozen blocks.
 
     The model parser is the primary structural boundary; these checks also
@@ -285,11 +285,18 @@ def check_design(design: Any) -> CheckReport:
     """
     from .model import freeze_fingerprint, walk_blocks
     from .expressions import resolve_parameters, evaluate_constraint
+    from .physical_ports import check_physical_ports
+
+    if type(require_physical_ports) is not bool:
+        raise ValueError("require_physical_ports must be a boolean")
 
     report = CheckReport("preflight", metadata={"completed": False, "native": False,
                                                "scope": "declared-interface-metadata"})
     try:
         report.metadata["design_hash"] = design.fingerprint()
+        physical = check_physical_ports(design, require_physical_ports=require_physical_ports)
+        report.issues.extend(physical.issues)
+        report.metadata["physical_ports"] = physical.metadata["coverage"]
         blocks = dict(walk_blocks(design.root))
         ports = {f"{path}.{port.id}": port for path, block in blocks.items() for port in block.ports}
         nets = _Nets(ports)
@@ -309,15 +316,28 @@ def check_design(design: Any) -> CheckReport:
                 named_nets[connection.net] = connection.source
             if connection.source == connection.target:
                 _issue(report, "connection.self_connection", "A port cannot be connected only to itself.", connection.source)
+        # Explicit Port.net is a physical global net, even if no logical edge
+        # joins two interfaces. It must participate in driver and rail checks.
+        physical_names: dict[str, str] = {}
+        for path, port in ports.items():
+            if type(port.net) is str and port.net:
+                if port.net in named_nets:
+                    nets.join(path, named_nets[port.net])
+                if port.net in physical_names:
+                    nets.join(path, physical_names[port.net])
+                else:
+                    physical_names[port.net] = path
         groups: dict[str, list[tuple[str, Any]]] = defaultdict(list)
-        labels: dict[str, list[str]] = defaultdict(list)
+        labels: dict[str, set[str]] = defaultdict(set)
         for name, path in named_nets.items():
-            labels[nets.find(path)].append(name)
+            labels[nets.find(path)].add(name)
+        for name, path in physical_names.items():
+            labels[nets.find(path)].add(name)
         for path, port in sorted(ports.items()):
             _validate_declared_port(path, port, report)
             if port.required and path not in connected:
                 _issue(report, "connection.required_unconnected", "Required block port is not connected.", path)
-            if path in connected:
+            if path in connected or type(port.net) is str and port.net:
                 groups[nets.find(path)].append((path, port))
         for root, entries in sorted(groups.items()):
             _check_net(entries, sorted(labels[root]), report)
@@ -364,7 +384,7 @@ def check_design(design: Any) -> CheckReport:
         report.metadata["block_count"] = len(blocks)
         report.metadata["port_count"] = len(ports)
         report.metadata["net_count"] = len(groups)
-        report.metadata["completed"] = True
+        report.metadata["completed"] = physical.metadata.get("completed") is True
     except Exception as exc:
         # Never report a clean preflight after an unexpected checker/model error.
         _issue(report, "preflight.incomplete", f"Preflight could not complete: {type(exc).__name__}: {exc}",
