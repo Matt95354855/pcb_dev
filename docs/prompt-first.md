@@ -54,8 +54,8 @@ faire disparaître une erreur, ni se donner des permissions supplémentaires.
 
 ## Fonctionnement local et amélioration
 
-L'inférence doit fonctionner sur un modèle explicitement configuré et servi
-localement. Le transport actuel accepte un endpoint loopback compatible avec les
+L'inférence doit fonctionner sur un modèle auto-hébergé explicitement configuré,
+sur la machine de l'application ou sur l'infrastructure Runpod de l'utilisateur. Le transport actuel accepte un endpoint loopback compatible avec les
 appels d'outils ; aucun modèle ou serveur réel n'a encore été qualifié.
 Le choix dépendra de la machine et du modèle effectivement disponible.
 
@@ -83,3 +83,6 @@ changer les exigences ou les autorisations du projet.
 Le premier critère d'acceptation est un prompt, ses clarifications et un vrai
 modèle local produisant un brouillon traçable avec des rapports honnêtes. Le jalon
 de fabrication de la feuille de route reste ensuite une exigence indépendante.
+
+Le déploiement prévu avec Qwen auto-hébergé et un fournisseur Claude optionnel
+est détaillé dans le [guide Runpod/Claude](runpod-claude.md). Les rôles restent à choisir.

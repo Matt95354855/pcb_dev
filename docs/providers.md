@@ -100,3 +100,9 @@ print(result)
 The test exposes only `self_test_echo`, asks for a fixed challenge value and checks the exact returned tool/arguments. It uses no design, filesystem tool, shell or fabrication operation. Construction never runs it. It consumes the same request/token quotas and reports protocol success/failure with `fabrication_ready=False`.
 
 A passing challenge demonstrates one response's tool-protocol compliance. It does not establish engineering competence, resistance to prompt injection, model benchmark quality or fabrication readiness.
+
+## Runpod et Claude
+
+Voir le [guide de déploiement Qwen/Runpod et Claude](runpod-claude.md).
+Le gabarit Runpod utilise le transport compatible existant ; l’adaptateur natif
+Claude et le routage entre fournisseurs restent à implémenter et à tester.
