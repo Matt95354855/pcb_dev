@@ -343,7 +343,10 @@ def _footprint(path: str, binding: BoundComponent, pins: dict, net_codes: dict,
     for field in footprint[2:]:
         if not isinstance(field, list) or not field:
             continue
-        if field[0] in {"property", "fp_text", "pad"} and _one(field, "at"):
+        # Pad positions and angles stay exactly in the source footprint's local
+        # frame. Native KiCad adds the parent footprint rotation on load; adding
+        # it here would rotate pads twice (confirmed by native 9/10 geometry).
+        if field[0] in {"property", "fp_text"} and _one(field, "at"):
             px, py, angle = _position(field)
             _set(field, ["at", _n(px), _n(py), _n(angle + rotation)])
         if field[0] == "fp_text" and len(field) >= 3:
@@ -351,9 +354,8 @@ def _footprint(path: str, binding: BoundComponent, pins: dict, net_codes: dict,
                 field[2] = Quoted(component.reference)
             elif field[1] == "value":
                 field[2] = Quoted(component.value)
-        if field[0] == "fp_text_box":
-            angle = _one(field, "angle")
-            _set(field, ["angle", _n((float(angle[1]) if angle else 0) + rotation)])
+        # Text boxes, like pads, store a local angle. Ordinary property/fp_text
+        # fields above use an absolute file angle in KiCad's separate parser.
         if field[0] == "pad":
             number = str(field[1])
             _remove(field, "net", "pinfunction", "pintype")

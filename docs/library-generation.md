@@ -64,7 +64,7 @@ Les marqueurs de non-connexion explicites sont émis, mais ce fixture nominal n'
 
 Le schéma embarque les définitions réelles des symboles. Le PCB contient les pads, perçages, dessins de fabrication, sérigraphie et courtyards des empreintes liées. Des tables et bibliothèques locales permettent à KiCad de résoudre les mêmes définitions épinglées, indépendamment des bibliothèques globales installées. Les UUID sont déterministes.
 
-Les références externes de modèles 3D sont retirées des empreintes placées pour éviter de lire un modèle non épinglé pendant un export. Les sources originales les conservent comme données inertes ; le manifeste documente cette omission. La géométrie 3D n'est pas validée par ce parcours.
+Les références externes de modèles 3D sont retirées des empreintes placées et des copies actives `.pretty` du projet pour éviter de lire un modèle non épinglé pendant un export ou un rafraîchissement de bibliothèque. Ces copies actives sont des dérivés 2D documentés ; les snapshots originaux épinglés conservent les références 3D comme données inertes. Le manifeste documente cette omission. La géométrie 3D n'est pas validée par ce parcours.
 
 Les fichiers portent le marqueur `PCBDEV_LIBRARY_DRAFT`. Les règles de carte restent des hypothèses de planification. La netlist produite directement depuis le modèle sert à la revue ; elle ne constitue pas une preuve indépendante que KiCad a interprété le schéma correctement. Cette preuve utilise un **export natif du schéma**, puis une comparaison modèle/schéma/PCB.
 

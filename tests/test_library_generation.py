@@ -109,9 +109,9 @@ class LibraryGenerationTests(unittest.TestCase):
                     self.assertEqual(children(pad, field), children(original, field), (binding.path, pad[1], field))
                 before = one(original, "at")
                 after = one(pad, "at")
-                self.assertEqual([float(value) for value in after[1:3]], [float(value) for value in before[1:3]])
-                angle = float(before[3]) if len(before) == 4 else 0
-                self.assertEqual(float(after[3]), angle + binding.component.position.rotation)
+                # The file stores local pad coordinates/angles. The native
+                # geometry smoke separately checks global source+pose angles.
+                self.assertEqual(after, before)
             for layer in ("F.CrtYd", "F.SilkS", "F.Fab"):
                 old_graphics = [node for node in binding.footprint_tree if isinstance(node, list) and node and node[0].startswith("fp_") and children(node, "layer") and one(node, "layer")[1] == layer]
                 new_graphics = [node for node in footprint if isinstance(node, list) and node and node[0].startswith("fp_") and children(node, "layer") and one(node, "layer")[1] == layer]
@@ -249,6 +249,48 @@ class LibraryGenerationTests(unittest.TestCase):
         holes = [pad for pad in descendants(tree, "pad") if pad[2] == "np_thru_hole"]
         self.assertEqual(len(holes), 4)
         self.assertTrue(all(not children(pad, "net") and not children(pad, "pintype") for pad in holes))
+
+    def test_nonzero_source_pad_angles_remain_local_at_rotated_placements(self):
+        footprint = self.fixture / "libraries" / "R_0603_1608Metric.kicad_mod"
+        footprint.write_text(footprint.read_text().replace("(at -0.825 0)", "(at -0.825 0 37.5)"))
+        registry_path = self.fixture / "registry.json"
+        registry = json.loads(registry_path.read_text())
+        for entry in registry["libraries"]:
+            if entry["name"] == "footprint-r0603":
+                entry["sha256"] = hashlib.sha256(footprint.read_bytes()).hexdigest()
+        registry_path.write_text(json.dumps(registry))
+        tree = parse_quoted(self.paths()["board"].read_text())
+        checked = set()
+        for placed in children(tree, "footprint"):
+            reference = next(field[2] for field in children(placed, "property") if field[1] == "Reference")
+            if reference in {"R1", "R2"}:
+                pad = next(pad for pad in children(placed, "pad") if pad[1] == "1")
+                self.assertEqual(one(pad, "at"), ["at", "-0.825", "0", "37.5"])
+                self.assertIn(float(one(placed, "at")[3]), {90, 270})
+                checked.add(reference)
+        self.assertEqual(checked, {"R1", "R2"})
+
+    def test_text_box_angles_stay_local_while_ordinary_text_angles_are_absolute(self):
+        footprint = self.fixture / "libraries" / "R_0603_1608Metric.kicad_mod"
+        text = footprint.read_text()
+        box = '\n(fp_text_box "Pinned text box" (start -2 -4) (end 2 -2) (angle 30) (layer "F.Fab") (effects (font (size 1 1))) (stroke (width 0.05) (type solid)))\n'
+        footprint.write_text(text[:text.rfind(")")] + box + ")\n")
+        registry_path = self.fixture / "registry.json"
+        registry = json.loads(registry_path.read_text())
+        for entry in registry["libraries"]:
+            if entry["name"] == "footprint-r0603":
+                entry["sha256"] = hashlib.sha256(footprint.read_bytes()).hexdigest()
+        registry_path.write_text(json.dumps(registry))
+        tree = parse_quoted(self.paths()["board"].read_text())
+        checked = set()
+        for placed in children(tree, "footprint"):
+            reference = next(field[2] for field in children(placed, "property") if field[1] == "Reference")
+            if reference in {"R1", "R2"}:
+                self.assertEqual(one(one(placed, "fp_text_box"), "angle"), ["angle", "30"])
+                ref_field = next(field for field in children(placed, "property") if field[1] == "Reference")
+                self.assertEqual(float(one(ref_field, "at")[3]), float(one(placed, "at")[3]))
+                checked.add(reference)
+        self.assertEqual(checked, {"R1", "R2"})
 
 
 if __name__ == "__main__":

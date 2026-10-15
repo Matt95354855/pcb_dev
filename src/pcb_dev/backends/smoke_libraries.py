@@ -47,7 +47,8 @@ def _close(actual: float, expected: float, name: str) -> None:
 
 def _angle(actual: float, expected: float, name: str) -> None:
     error = (actual - expected + 180) % 360 - 180
-    _close(error, 0.0, name)
+    if not math.isclose(error, 0, rel_tol=0, abs_tol=0.000002):
+        raise ValueError(f"{name} differs from pinned library/model: actual {actual:g} degrees versus expected {expected:g} degrees")
 
 
 def _reference(footprint: list) -> str:
@@ -104,7 +105,9 @@ def verify_board_geometry(bound: Any, board_path: Path) -> dict[str, Any]:
             pose = _one(pad, "at")
             _close(_number(pose[1]), original.x_mm, f"{reference}.{number} local X")
             _close(_number(pose[2]), original.y_mm, f"{reference}.{number} local Y")
-            _angle(_number(pose[3]) if len(pose) > 3 else 0, original.rotation + position.rotation, f"{reference}.{number} pad rotation")
+            # Board-file pad angles are local to the footprint. KiCad applies
+            # the placement rotation when loading native absolute geometry.
+            _angle(_number(pose[3]) if len(pose) > 3 else 0, original.rotation, f"{reference}.{number} local pad rotation")
             size = _one(pad, "size")
             _close(_number(size[1]), original.size_x_mm, f"{reference}.{number} pad width")
             _close(_number(size[2]), original.size_y_mm, f"{reference}.{number} pad height")

@@ -47,8 +47,9 @@ class BindingsTests(unittest.TestCase):
         (self.root / "libraries").mkdir()
         self.symbols = self.root / "libraries" / "Test.kicad_sym"
         self.footprint = self.root / "libraries" / "R_Test.kicad_mod"
-        self.symbols.write_text(SYMBOLS)
-        self.footprint.write_text(FOOTPRINT)
+        # Source provenance is byte exact; avoid platform newline translation.
+        self.symbols.write_bytes(SYMBOLS.encode("utf-8"))
+        self.footprint.write_bytes(FOOTPRINT.encode("utf-8"))
         self.registry_path = self.root / "registry.json"
         self.bindings_path = self.root / "bindings.json"
         self.registry = {"schema_version": 1, "libraries": [
@@ -114,7 +115,7 @@ class BindingsTests(unittest.TestCase):
         self.assertEqual(bound.provenance["registry"], "registry.json")
         self.assertNotIn(str(self.root), json.dumps(bound.provenance))
         self.symbols.write_text("changed after capture")
-        self.assertEqual(bound.source_contents["symbols"], SYMBOLS.encode())
+        self.assertEqual(bound.source_contents["symbols"], SYMBOLS.encode("utf-8"))
 
     def test_bound_model_and_per_component_trees_do_not_alias_input(self):
         original = model()
