@@ -232,6 +232,24 @@ class LibraryGenerationTests(unittest.TestCase):
         self.assertEqual(outside.read_text(), "keep")
         self.assertEqual([path.name for path in destination.iterdir()], ["sym-lib-table"])
 
+    def test_numbered_mechanical_npth_pads_never_join_electrical_nets(self):
+        footprint = self.fixture / "libraries" / "R_0603_1608Metric.kicad_mod"
+        text = footprint.read_text()
+        mechanical = '\n(pad "1" np_thru_hole circle (at 3 0) (size 1.5 1.5) (drill 1) (layers "*.Cu" "*.Mask"))\n(pad "M1" np_thru_hole circle (at -3 0) (size 1.5 1.5) (drill 1) (layers "*.Cu" "*.Mask"))\n'
+        footprint.write_text(text[:text.rfind(")")] + mechanical + ")\n")
+        registry_path = self.fixture / "registry.json"
+        registry = json.loads(registry_path.read_text())
+        for entry in registry["libraries"]:
+            if entry["name"] == "footprint-r0603":
+                entry["sha256"] = hashlib.sha256(footprint.read_bytes()).hexdigest()
+        registry_path.write_text(json.dumps(registry))
+        paths = self.paths()
+        self.assertTrue(check_parity(self.design, paths["netlist"], paths["board"]).passed)
+        tree = parse_quoted(paths["board"].read_text())
+        holes = [pad for pad in descendants(tree, "pad") if pad[2] == "np_thru_hole"]
+        self.assertEqual(len(holes), 4)
+        self.assertTrue(all(not children(pad, "net") and not children(pad, "pintype") for pad in holes))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -112,11 +112,11 @@ def _pins(binding: BoundComponent) -> dict:
         if pin.unit not in (0, 1) or pin.convert not in (0, 1):
             raise LibraryGenerationError("Only one-unit symbols with common/normal conversion are supported")
         identity = (pin.name, pin.electrical_type, pin.shape, pin.x_mm, pin.y_mm,
-                    pin.rotation, pin.length_mm, pin.hidden)
+                    pin.rotation % 360, pin.length_mm, pin.hidden)
         if pin.number in pins:
             previous = pins[pin.number]
             previous_identity = (previous.name, previous.electrical_type, previous.shape,
-                                 previous.x_mm, previous.y_mm, previous.rotation,
+                                 previous.x_mm, previous.y_mm, previous.rotation % 360,
                                  previous.length_mm, previous.hidden)
             if identity != previous_identity:
                 raise LibraryGenerationError("Conflicting duplicate symbol pin positions or types")
@@ -127,7 +127,7 @@ def _pins(binding: BoundComponent) -> dict:
     if (set(binding.component.pins) & set(binding.no_connect_pins)
             or set(binding.component.pins) | set(binding.no_connect_pins) != set(pins)):
         raise LibraryGenerationError("Every library pin requires one net mapping or explicit no-connect")
-    pad_numbers = {pad.number for pad in binding.footprint_inventory.pads if pad.number}
+    pad_numbers = {pad.number for pad in binding.footprint_inventory.pads if pad.number and pad.type != "np_thru_hole"}
     if pad_numbers != set(pins):
         raise LibraryGenerationError("Actual footprint pad numbers must match actual symbol pins")
     return pins
@@ -357,7 +357,7 @@ def _footprint(path: str, binding: BoundComponent, pins: dict, net_codes: dict,
         if field[0] == "pad":
             number = str(field[1])
             _remove(field, "net", "pinfunction", "pintype")
-            if number and number in component.pins:
+            if field[2] != "np_thru_hole" and number and number in component.pins:
                 net = component.pins[number]
                 field.extend([["net", str(net_codes[net]), Quoted(net)],
                               ["pinfunction", Quoted(pins[number].name)],
