@@ -26,10 +26,12 @@ class TransactionError(ModelError):
 
 MAX_OPERATIONS = 128
 _UPDATE_FIELDS = {"version", "description", "parameters", "equations", "constraints", "resources", "variants"}
+_COMPONENT_FIELDS = {"value", "pins", "position", "parameters", "mpn", "lcsc"}
 _SCHEMAS = {
     "set_parameter": {"op", "block", "name", "value"},
     "add_block": {"op", "parent", "block"},
     "update_block": {"op", "block", "changes"},
+    "update_component": {"op", "component", "changes"},
     "connect": {"op", "source", "target", "net"},
     "remove_connection": {"op", "source", "target", "net"},
 }
@@ -165,6 +167,25 @@ def apply_patch(design: Design, operations: list[dict[str, Any]], *,
                     if type(changes) is not dict or not changes or set(changes) - _UPDATE_FIELDS:
                         raise TransactionError(f"changes may update only {', '.join(sorted(_UPDATE_FIELDS))}")
                     blocks[path].update(changes)
+            elif op == "update_component":
+                component_path = _text(operation["component"], "component")
+                path, separator, component_id = component_path.rpartition(".")
+                if not separator or path not in blocks:
+                    raise TransactionError(f"unknown component {component_path!r}")
+                _assert_not_frozen(path, frozen)
+                component = next((item for item in blocks[path].get("components", [])
+                                  if item["id"] == component_id), None)
+                if component is None:
+                    raise TransactionError(f"unknown component {component_path!r}")
+                changes = operation["changes"]
+                if type(changes) is not dict or not changes or set(changes) - _COMPONENT_FIELDS:
+                    raise TransactionError(f"component changes may update only {', '.join(sorted(_COMPONENT_FIELDS))}")
+                # Pin inventory is part of a selected physical component. A
+                # reconnection must account for every original pin explicitly.
+                if "pins" in changes and (type(changes["pins"]) is not dict
+                                           or set(changes["pins"]) != set(component.get("pins", {}))):
+                    raise TransactionError("component update must preserve the complete pin inventory")
+                component.update(changes)
             elif op == "add_block":
                 path = _text(operation["parent"], "parent")
                 if path not in blocks:

@@ -412,7 +412,7 @@ class ChatCompletionsProvider:
         self.budget_tokens_used += max(0, input_tokens - request_units) + max(0, output_tokens - len(content))
         if self.budget_tokens_used > self.config.max_total_tokens or output_tokens > output_limit:
             raise ProviderError("Endpoint response exceeded its token quota; tool calls were not accepted")
-        return ModelReply(text or "", calls, input_tokens, output_tokens)
+        return ModelReply(text or "", calls, input_tokens, output_tokens, usage_reported=usage is not None)
 
     def self_test(self) -> dict[str, Any]:
         """Explicitly send one harmless deterministic tool challenge.

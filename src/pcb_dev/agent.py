@@ -115,6 +115,7 @@ class ModelReply:
     tool_calls: tuple[ToolCall, ...] = ()
     input_tokens: int = 0
     output_tokens: int = 0
+    usage_reported: bool = False
 
 
 @runtime_checkable

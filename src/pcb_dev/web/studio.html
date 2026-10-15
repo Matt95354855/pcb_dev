@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>PCB Studio · Votre idée, un projet concret</title>
+  <link rel="stylesheet" href="/studio.css">
+  <script src="/studio.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail">
+      <a class="brand" href="/" aria-label="Accueil PCB Studio"><span class="brand-mark">▦</span><span>PCB<span class="brand-light">studio</span></span></a>
+      <div class="rail-label">ESPACE DE CONCEPTION</div>
+      <div class="rail-current"><span class="status-dot"></span> Votre projet</div>
+      <div class="rail-note">De l’idée au circuit.<br>Une décision à la fois.</div>
+      <div class="rail-footer"><span class="tiny-chip">BÊTA</span><p>Les aperçus restent des brouillons jusqu’aux vérifications de fabrication.</p></div>
+    </aside>
+    <main class="workspace">
+      <header class="topbar">
+        <div><p class="eyebrow">CONCEVONS ENSEMBLE</p><h1 id="project-title">Une idée de circuit ?</h1></div>
+        <span id="project-status" class="status-pill">Connexion…</span>
+      </header>
+      <div id="demo-banner" class="demo-banner" hidden>Démonstration — aucun modèle connecté</div>
+      <div id="error-banner" class="error-banner" role="alert" hidden></div>
+      <div class="studio-grid">
+        <section class="conversation-panel" aria-label="Conversation avec votre assistant de conception">
+          <div class="conversation-heading"><div><span class="assistant-dot"></span><strong>Votre assistant de conception</strong><p id="provider-caption">Qwen vous accompagne dans le projet.</p></div><span class="small-label">CONVERSATION</span></div>
+          <div id="conversation" class="conversation" aria-live="polite" aria-relevant="additions">
+            <div class="welcome"><div class="welcome-symbol">⌁</div><h2>Décrivez ce que vous voulez créer.</h2><p>À quoi servira votre carte ? Comment sera-t-elle alimentée ? Quelques mots suffisent pour commencer.</p><div class="example-prompts"><button type="button" data-prompt="Je veux une petite carte alimentée en USB pour mesurer la température et allumer une LED.">Un capteur USB</button><button type="button" data-prompt="Je veux piloter un petit moteur à partir d’un microcontrôleur. Aide-moi à préciser les besoins.">Un pilote de moteur</button></div></div>
+          </div>
+          <div id="working" class="working" role="status" hidden><span class="pulse-dot"></span> Votre assistant prépare la suite…</div>
+          <form id="chat-form" class="composer"><label for="message" class="sr-only">Votre message</label><textarea id="message" rows="3" maxlength="16000" placeholder="J’aimerais créer une carte qui…" required></textarea><div class="composer-footer"><span>Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne</span><button id="send-button" class="primary-button" type="submit">Envoyer <span aria-hidden="true">↗</span></button></div></form>
+          <p class="composer-note">Vous gardez la main sur le brief et sur les demandes d’avis externe.</p>
+        </section>
+        <aside class="project-panel" aria-label="Détails du projet">
+          <div class="panel-heading"><h2>Votre projet prend forme</h2><p>Les décisions et les résultats, au même endroit.</p></div>
+          <div class="tabs" role="tablist" aria-label="Informations du projet"><button id="tab-brief" type="button" role="tab" aria-selected="true" aria-controls="brief-panel">Brief</button><button id="tab-design" type="button" role="tab" aria-selected="false" aria-controls="design-panel">Circuit</button><button id="tab-files" type="button" role="tab" aria-selected="false" aria-controls="files-panel">Fichiers</button></div>
+          <section id="brief-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-brief"><div id="brief-content" class="empty-state">Le brief apparaîtra après votre premier échange.</div><button id="approve-button" type="button" class="primary-button full-width" disabled>Valider ce brief et continuer</button><p class="hint">La validation s’applique à cette version du brief.</p><div id="plan-content"></div></section>
+          <section id="design-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-design" hidden><div id="design-content" class="empty-state">Votre circuit sera présenté ici lorsqu’un modèle sera disponible.</div><div class="checks-card"><h3>Vérifications</h3><div id="preflight-status" class="check-row"><span>Modèle électrique</span><span>À venir</span></div><div id="physical-status" class="check-row"><span>Liaisons vers les composants</span><span>Non établies</span></div><div id="native-status" class="check-row"><span>Vérification native KiCad</span><span>Non exécutée</span></div><div id="erc-status" class="check-row"><span>Schéma électrique</span><span>Non exécuté</span></div><div id="drc-status" class="check-row"><span>Circuit imprimé</span><span>Non exécuté</span></div><div id="parity-status" class="check-row"><span>Correspondance des fichiers</span><span>Non établie</span></div><div id="simulation-status" class="check-row"><span>Simulation</span><span>Non exécutée</span></div><p>Un contrôle du modèle ne prouve ni le routage ni la préparation à la fabrication.</p><div id="findings"></div></div></section>
+          <section id="files-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-files" hidden><div id="files-content" class="empty-state">Les fichiers générés et leurs rapports apparaîtront ici.</div><p class="hint">Les téléchargements proviennent uniquement de ce projet.</p></section>
+          <section class="review-card"><div class="review-heading"><span class="review-symbol">✧</span><div><h3>Un second regard</h3><p>Demandez un avis à Claude.</p></div></div><label for="review-question" class="sr-only">Question pour Claude</label><textarea id="review-question" rows="2" maxlength="16000" placeholder="Quel point souhaitez-vous faire examiner ?"></textarea><button id="review-button" type="button" class="secondary-button full-width" disabled>Demander l’avis de Claude</button><p id="review-availability" class="hint">Vérification de la disponibilité…</p></section>
+          <section class="usage-card" aria-label="Consommation des modèles"><div class="usage-heading"><h3>Usage du projet</h3><span id="claude-share" class="small-label">0 % Claude</span></div><dl><div><dt>Qwen</dt><dd id="qwen-tokens">0 token</dd></div><div><dt>Claude</dt><dd id="claude-tokens">0 token</dd></div><div><dt>Budget Claude disponible</dt><dd id="claude-available">0 token</dd></div></dl><p>Claude reste limité à 10 % du volume total de tokens. Aucun avis automatique.</p><p id="usage-unknown" class="usage-warning" hidden>Certains échanges Qwen n’ont pas de comptage fiable ; le budget Claude reste conservateur.</p></section>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <dialog id="auth-dialog"><form id="auth-form"><span class="brand-mark">▦</span><h2>Accéder à votre session</h2><p>Saisissez la clé d’accès fournie au lancement du studio. Elle reste dans cette page et n’est jamais ajoutée à l’adresse.</p><label for="access-token">Clé d’accès du studio</label><input id="access-token" type="password" autocomplete="off" required><p id="auth-error" class="error-text" role="alert" hidden>La clé ne permet pas d’ouvrir cette session.</p><button type="submit" class="primary-button full-width">Ouvrir mon projet</button></form></dialog>
+</body>
+</html>

@@ -63,6 +63,16 @@ MESSAGES = ({"role": "system", "content": "Follow the allowed tool schema."}, {"
 
 
 class ProviderTests(unittest.TestCase):
+    def test_only_explicit_validated_usage_is_marked_as_reported(self):
+        data = completion()
+        del data["usage"]
+        unknown = provider(Opener(Response(data))).complete(MESSAGES, (), max_tokens=100)
+        self.assertFalse(unknown.usage_reported)
+        self.assertEqual((unknown.input_tokens, unknown.output_tokens), (0, 0))
+        measured = provider(Opener(Response(completion()))).complete(MESSAGES, (), max_tokens=100)
+        self.assertTrue(measured.usage_reported)
+        self.assertEqual((measured.input_tokens, measured.output_tokens), (10, 5))
+
     def test_constructor_and_configuration_never_open_a_connection(self):
         opener = Opener()
         adapter = provider(opener)
