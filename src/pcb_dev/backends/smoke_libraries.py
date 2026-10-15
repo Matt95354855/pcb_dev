@@ -214,13 +214,16 @@ def verify_native_netlist(bound: Any, path: Path) -> dict[str, Any]:
         pins = {pin.attrib["num"]: pin for pin in libparts[0].findall("pins/pin")}
         for pin in item.symbol_inventory.pins:
             actual = pins.get(pin.number)
-            if actual is None or actual.get("type") != pin.electrical_type or actual.get("name") != pin.name:
+            # '~' is KiCad's source-file placeholder for an unnamed pin. Native
+            # XML export serializes it as name=""; actual named pins stay exact.
+            expected_name = "" if pin.name == "~" else pin.name
+            if actual is None or actual.get("type") != pin.electrical_type or actual.get("name") != expected_name:
                 raise ValueError("Native netlist altered a real symbol pin name/type")
     if actual_nets != expected_nets:
         raise ValueError("Native schematic global pin-net connectivity differs from the model")
     return {"status": "passed", "native": True, "references": sorted(expected),
             "nets": {name: [list(pair) for pair in sorted(pins)] for name, pins in sorted(expected_nets.items())},
-            "electrical_pin_types_preserved": True}
+            "electrical_pin_types_preserved": True, "unnamed_pin_encoding": "source '~' exported as empty XML name"}
 
 
 def run_smoke(output_dir: Path, fixture_dir: Path | None = None) -> dict[str, Any]:

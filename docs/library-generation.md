@@ -79,7 +79,7 @@ python -m pcb_dev.backends.smoke_libraries --output build/native-libraries
 Le smoke échoue si le moteur réel est absent ou non pris en charge. Il conserve les commandes, hashes et rapports natifs. Ses conditions de réussite sont :
 
 1. Les symboles et empreintes proviennent des sources locales épinglées ; le PCB garde les tailles, formes, couches, perçages et rotations attendus.
-2. KiCad charge le schéma et exporte une netlist native contenant les trois composants, les nets attendus et les noms/types réels des broches.
+2. KiCad charge le schéma et exporte une netlist native contenant les trois composants, les nets attendus et les noms/types réels des broches. Le marqueur source `~` d'une broche sans nom correspond à `name=""` dans l'XML natif ; les broches nommées et les types restent comparés exactement.
 3. La parité modèle/schéma/PCB passe pour le mapping nominal et échoue pour une modification intentionnelle d'une broche.
 4. Les exports Gerber, perçages, positions et SVG de schéma chargent réellement les fichiers générés.
 5. L'ERC natif du mapping nominal passe ; le DRC natif conserve des connexions non routées et **reste bloquant**.
@@ -92,7 +92,7 @@ Une réussite du smoke signifie que ce fixture a été interprété comme attend
 
 ## Provenance et licence des données KiCad
 
-Les fichiers vendus dans [examples/library_divider/libraries](../examples/library_divider/libraries) proviennent de la release officielle **9.0.0** :
+Les fichiers de bibliothèque inclus dans [examples/library_divider/libraries](../examples/library_divider/libraries) proviennent de la release officielle **9.0.0** :
 
 | Collection | Commit exact |
 | --- | --- |

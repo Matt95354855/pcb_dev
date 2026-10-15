@@ -120,7 +120,7 @@ class NativeLibraryContractTests(unittest.TestCase):
                 seen.add(item.symbol_id)
                 pins = ET.SubElement(ET.SubElement(libparts, "libpart", lib=library, part=part), "pins")
                 for pin in item.symbol_inventory.pins:
-                    ET.SubElement(pins, "pin", num=pin.number, name=pin.name, type=pin.electrical_type)
+                    ET.SubElement(pins, "pin", num=pin.number, name="" if pin.name == "~" else pin.name, type=pin.electrical_type)
             for number, net in item.component.pins.items():
                 if net not in net_nodes:
                     net_nodes[net] = ET.SubElement(nets, "net", name=net)
@@ -130,6 +130,11 @@ class NativeLibraryContractTests(unittest.TestCase):
             ET.ElementTree(root).write(path, encoding="utf-8")
             self.assertEqual(verify_native_netlist(bound, path)["status"], "passed")
             libparts.find("libpart/pins/pin").set("type", "power_in")
+            ET.ElementTree(root).write(path, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "pin name/type"):
+                verify_native_netlist(bound, path)
+            libparts.find("libpart/pins/pin").set("type", "passive")
+            libparts.find("libpart/pins/pin").set("name", "renamed-real-pin")
             ET.ElementTree(root).write(path, encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "pin name/type"):
                 verify_native_netlist(bound, path)
