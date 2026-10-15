@@ -106,6 +106,22 @@ la valeur des composants, ni le routage, ni les règles réelles du fabricant.
 
 ## Mesures de réussite
 
+### ADR 007 — Intention physique explicite et preuves NC séparées
+
+`Port.net` et `Port.pin_bindings` expriment une intention vers les broches du même
+bloc. Les anciens ports restent abstraits ; un mode strict exige une réalisation
+montée complète. Une incohérence de nets bloque même un brouillon. Le calcul ne
+renomme jamais le cuivre et n'infère pas la fonction datasheet d'un composant.
+Les noms de nets explicites relient aussi les contrôles de conflits et budgets
+lorsqu'aucune arête logique n'est présente.
+
+La parité avec bibliothèques utilise un comparateur distinct. Les états NC doivent
+être explicitement demandés dans les bindings et reconnus dans l'export natif,
+avec des pads sans net. Le parseur général conserve son comportement strict.
+Les hash de l'export netlist, du schéma et du PCB sont reliés aux étapes natives ;
+une modification entre étapes bloque le gate. Aucune de ces preuves ne certifie
+le cuivre, une datasheet ou le procédé fabricant.
+
 À ce stade : entrées invalides rejetées, exemples incorrects bloqués, paramètres
 résolus de façon stable, tests de non-régression et aperçus reproductibles.
 Le critère de sortie du MVP physique reste une carte réelle passant ERC et DRC

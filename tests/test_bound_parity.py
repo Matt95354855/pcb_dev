@@ -220,6 +220,40 @@ class BoundParityTests(unittest.TestCase):
         binding.no_connect_pins = ()
         self.assertTrue(self.check().blocking)
 
+    def test_locally_inherited_symbol_with_nc_matches_the_same_resolved_pinned_source(self):
+        source = self.fixture / "libraries/Device.kicad_sym"
+        tree = parse_quoted(source.read_text())
+        tree.append(["symbol", Quoted("Derived"), ["extends", Quoted("R")],
+                     ["property", Quoted("Value"), Quoted("Derived"), ["at", "0", "0", "0"]]])
+        source.write_text(dumps(tree))
+        registry = json.loads((self.fixture / "registry.json").read_text())
+        record = next(item for item in registry["libraries"] if item["name"] == "symbol-device")
+        record["sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
+        (self.fixture / "registry.json").write_text(json.dumps(registry))
+        data = json.loads((self.fixture / "bindings.json").read_text())
+        data["components"]["board.r1"].update(symbol_name="Derived", symbol_id="Custom:Renamed")
+        (self.fixture / "bindings.json").write_text(json.dumps(data))
+        self.bound = load_bindings(self.design, self.fixture / "bindings.json")
+        self.paths = generate_bound(self.bound, self.root / "inherited-output")
+        self.xml = ET.fromstring(self.paths["netlist"].read_text())
+        for pin in self.xml.findall("libparts/libpart/pins/pin"):
+            if pin.get("name") == "~":
+                pin.set("name", "")
+        for node in self.xml.findall("nets/net/node"):
+            if node.get("pinfunction") == "~":
+                del node.attrib["pinfunction"]
+        net = ET.SubElement(self.xml.find("nets"), "net", code="99", name="unconnected-inherited-NC")
+        ET.SubElement(net, "node", ref="R1", pin="2", pintype="passive+no_connect")
+        self.board = parse_quoted(self.paths["board"].read_text())
+        binding = self.bound.components["board.r1"]
+        self.assertEqual(binding.symbol_inventory.extends, "R")
+        self.assertTrue(binding.symbol_inventory.inheritance_resolved)
+        self.assertFalse(children(binding.symbol_tree, "extends"))
+        report = self.check()
+        self.assertTrue(report.passed, report.to_json())
+        binding.symbol_inventory.pins[0].electrical_type = "input"
+        self.assertTrue(self.check().blocking)
+
     def test_symbol_name_type_and_libsource_mutations_are_rejected(self):
         pin = self.xml.find("libparts/libpart[@lib='Device']/pins/pin")
         pin.set("type", "input")

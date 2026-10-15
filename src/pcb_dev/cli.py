@@ -189,6 +189,9 @@ def _native(args) -> int:
             from .bound_parity import check_bound_parity
             mapping = check_bound_parity(bound, exported["path"], args.board)
         mapping.metadata["native_netlist_export"] = exported
+        if mapping.metadata.get("netlist_sha256") != exported.get("output_sha256"):
+            mapping.add(Issue("parity.netlist_changed", "blocker",
+                              "Exported netlist changed before model parity comparison"))
         if exported["input_sha256"] != evidence["erc"].get("input_sha256"):
             mapping.add(Issue("parity.schematic_changed", "blocker",
                               "Schematic changed between ERC and netlist export"))
