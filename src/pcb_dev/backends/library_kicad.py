@@ -27,6 +27,13 @@ if TYPE_CHECKING:
 
 LIBRARY_DRAFT_MARKER = "PCBDEV_LIBRARY_DRAFT"
 _NAMESPACE = uuid.UUID("e094364d-799f-5fd4-a88d-0d3e603c2245")
+_SCHEMATIC_GRID_MM = 1.27
+# Native KiCad 10.0.2 reports these checks as ignored in a default project.
+# Enable them explicitly; findings remain blocking under the unchanged gate.
+# Configuration paths follow KiCad's ERC_SETTINGS/BOARD_DESIGN_SETTINGS source.
+_ERC_ENABLED_CHECKS = ("single_global_label", "four_way_junction", "simulation_model_issue", "footprint_filter")
+_DRC_ENABLED_CHECKS = ("missing_courtyard", "track_not_centered_on_via", "tuning_profile_track_geometries",
+                       "footprint_filters_mismatch", "footprint_type_mismatch")
 
 
 class LibraryGenerationError(ValueError):
@@ -223,11 +230,11 @@ def _schematic(name: str, stem: str, items: list) -> list:
             ["title_block", ["title", Quoted(name)],
              ["comment", "1", Quoted(LIBRARY_DRAFT_MARKER + ": real pinned libraries; unrouted and unqualified")]],
             ["lib_symbols", *[definitions[key] for key in sorted(definitions)]]]
-    y = 30.0
+    anchor_y_units = 20
     for path, binding, pins in items:
         component = binding.component
         # Logical symbols stay at zero rotation; physical placement is independent.
-        x = 70.0
+        x, y = 50 * _SCHEMATIC_GRID_MM, anchor_y_units * _SCHEMATIC_GRID_MM
         instance = ["symbol", ["lib_id", Quoted(binding.symbol_id)], ["at", _n(x), _n(y), "0"],
                     ["unit", "1"], ["exclude_from_sim", "no"], ["in_bom", "yes"], ["on_board", "yes"],
                     ["dnp", "no" if component.fitted else "yes"], ["uuid", _uid(path + ":symbol")]]
@@ -270,7 +277,9 @@ def _schematic(name: str, stem: str, items: list) -> list:
                              ["property", Quoted("Intersheetrefs"), Quoted("${INTERSHEET_REFS}"),
                               ["at", _n(px), _n(py), "0"], ["effects", ["font", ["size", "1", "1"]], ["hide", "yes"]]]])
         span = max(pin.y_mm for pin in pins.values()) - min(pin.y_mm for pin in pins.values())
-        y += max(20.32, span + 15.24)
+        # Keep all subsequent anchors on the connection grid even when an
+        # imported symbol's pin span is not an exact multiple of that grid.
+        anchor_y_units += max(16, math.ceil((span + 15.24) / _SCHEMATIC_GRID_MM - 1e-9))
     return root
 
 
@@ -428,6 +437,20 @@ def _netlist(design: Design, stem: str, items: list, net_codes: dict) -> str:
     return ET.tostring(root, encoding="unicode", xml_declaration=True) + "\n"
 
 
+def _project(stem: str) -> dict:
+    """Keep native check policy explicit rather than accepting ignored defaults."""
+    return {
+        "meta": {"version": 1, "filename": stem + ".kicad_pro"},
+        "erc": {"rule_severities": dict.fromkeys(_ERC_ENABLED_CHECKS, "error"), "erc_exclusions": []},
+        "board": {"design_settings": {
+            "rule_severities": dict.fromkeys(_DRC_ENABLED_CHECKS, "error"),
+            "drc_exclusions": [],
+            "rules": {"min_clearance": 0.2, "min_track_width": 0.25,
+                      "min_via_diameter": 0.6, "min_through_hole_diameter": 0.3},
+        }},
+    }
+
+
 def generate_bound(bound: BoundDesign, output_dir: Path) -> dict[str, Path]:
     """Generate a library draft with local, pinned two-dimensional definitions.
 
@@ -445,7 +468,7 @@ def generate_bound(bound: BoundDesign, output_dir: Path) -> dict[str, Path]:
         "netlist": (stem + ".net", _netlist(design, stem, items, net_codes)),
         "symbol_table": ("sym-lib-table", dumps(["sym_lib_table", ["version", "7"], *symbols]) + "\n"),
         "footprint_table": ("fp-lib-table", dumps(["fp_lib_table", ["version", "7"], *footprints]) + "\n"),
-        "project": (stem + ".kicad_pro", json.dumps({"meta": {"version": 1, "filename": stem + ".kicad_pro"}, "board": {"design_settings": {"rules": {"min_clearance": 0.2, "min_track_width": 0.25, "min_via_diameter": 0.6, "min_through_hole_diameter": 0.3}}}}, sort_keys=True, indent=2) + "\n"),
+        "project": (stem + ".kicad_pro", json.dumps(_project(stem), sort_keys=True, indent=2) + "\n"),
         "rules": (stem + ".kicad_dru", '(version 1)\n(rule "PCBDev illustrative minimums - verify manufacturer stackup"\n  (constraint clearance (min 0.2mm))\n  (constraint track_width (min 0.25mm)))\n'),
     })
     manifest = {"schema_version": 1, "generator": "pcb_dev", "kind": "library-draft",

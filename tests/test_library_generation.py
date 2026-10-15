@@ -292,6 +292,52 @@ class LibraryGenerationTests(unittest.TestCase):
                 checked.add(reference)
         self.assertEqual(checked, {"R1", "R2"})
 
+    def test_nominal_symbol_anchors_and_connection_labels_stay_on_127_grid(self):
+        tree = parse_quoted(self.paths()["schematic"].read_text())
+        instances = children(tree, "symbol")
+        self.assertEqual(one(instances[0], "at")[1:3], ["63.5", "25.4"])
+        for node in [*instances, *children(tree, "global_label"), *children(tree, "no_connect")]:
+            for value in one(node, "at")[1:3]:
+                units = float(value) / 1.27
+                self.assertAlmostEqual(units, round(units), places=9)
+
+    def test_non_grid_pin_span_does_not_shift_later_anchors_off_grid(self):
+        library = self.fixture / "libraries" / "Device.kicad_sym"
+        library.write_text(library.read_text().replace("(at 0 -3.81 90)", "(at 0 -4.2 90)"))
+        registry_path = self.fixture / "registry.json"
+        registry = json.loads(registry_path.read_text())
+        for entry in registry["libraries"]:
+            if entry["name"] == "symbol-device":
+                entry["sha256"] = hashlib.sha256(library.read_bytes()).hexdigest()
+        registry_path.write_text(json.dumps(registry))
+        tree = parse_quoted(self.paths()["schematic"].read_text())
+        instances = children(tree, "symbol")
+        for instance in instances:
+            for value in one(instance, "at")[1:3]:
+                units = float(value) / 1.27
+                self.assertAlmostEqual(units, round(units), places=9)
+        # Actual source pins remain exact; the generator does not conceal an
+        # off-grid library endpoint by distorting the imported symbol geometry.
+        y = float(one(instances[1], "at")[2])
+        self.assertTrue(any(abs(float(one(label, "at")[2]) - y - 4.2) < 1e-9
+                            for label in children(tree, "global_label")))
+
+    def test_native_default_ignored_checks_are_enabled_without_exclusions(self):
+        project = json.loads(self.paths()["project"].read_text())
+        erc = project["erc"]
+        self.assertEqual(erc["rule_severities"], {
+            "single_global_label": "error", "four_way_junction": "error",
+            "simulation_model_issue": "error", "footprint_filter": "error",
+        })
+        self.assertEqual(erc["erc_exclusions"], [])
+        drc = project["board"]["design_settings"]
+        self.assertEqual(drc["rule_severities"], {
+            "missing_courtyard": "error", "track_not_centered_on_via": "error",
+            "tuning_profile_track_geometries": "error", "footprint_filters_mismatch": "error",
+            "footprint_type_mismatch": "error",
+        })
+        self.assertEqual(drc["drc_exclusions"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
