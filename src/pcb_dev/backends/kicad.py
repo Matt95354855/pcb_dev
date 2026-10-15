@@ -235,7 +235,7 @@ def generate(raw_design: dict, output_dir: Path) -> dict[str, Path]:
         path = destination / filename
         if path.is_symlink():
             raise ValueError(f"refusing to overwrite symlink: {path}")
-        path.write_text(text, encoding="utf-8")
+        path.write_text(text, encoding="utf-8", newline="\n")
         paths[key] = path
     return paths
 

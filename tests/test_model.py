@@ -66,7 +66,7 @@ class ModelTests(unittest.TestCase):
             dump_design(design, first)
             dump_design(load_design(first), second)
             self.assertEqual(first.read_bytes(), second.read_bytes())
-            self.assertIn("Électronique", first.read_text())
+            self.assertIn("Électronique", first.read_text(encoding="utf-8"))
             self.assertTrue(first.read_bytes().endswith(b"\n"))
         self.assertEqual(len(design.fingerprint()), 64)
         reordered = dict(reversed(list(fixture().items())))

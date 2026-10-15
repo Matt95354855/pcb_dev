@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 — 2026-10-15
+
+- Preserve LF bytes on Windows so generated KiCad manifest hashes match the files.
+- Read the UTF-8 model fixture explicitly in the portable test suite.
+
 ## 0.1.0 — 2026-10-15
 
 Initial alpha of the block-model and verification layer.
