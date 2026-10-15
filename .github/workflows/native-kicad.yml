@@ -6,6 +6,10 @@ on:
       - 'src/pcb_dev/**'
       - 'tests/test_backends.py'
       - 'tests/test_spice_generation.py'
+      - 'tests/test_bindings.py'
+      - 'tests/test_library_generation.py'
+      - 'tests/test_native_library_contract.py'
+      - 'examples/library_divider/**'
       - 'examples/rc_filter.json'
       - 'examples/voltage_divider.json'
       - '.github/workflows/native-kicad.yml'
@@ -14,6 +18,10 @@ on:
       - 'src/pcb_dev/**'
       - 'tests/test_backends.py'
       - 'tests/test_spice_generation.py'
+      - 'tests/test_bindings.py'
+      - 'tests/test_library_generation.py'
+      - 'tests/test_native_library_contract.py'
+      - 'examples/library_divider/**'
       - 'examples/rc_filter.json'
       - 'examples/voltage_divider.json'
       - '.github/workflows/native-kicad.yml'
@@ -46,12 +54,16 @@ jobs:
         run: python3 -m unittest discover -s tests -p test_backends.py -v
       - name: Native grammar, global nets, exports and expected unrouted DRC
         run: python3 -m pcb_dev.backends.smoke --output build/native-smoke
+      - name: Pinned real symbols, footprints, native parity and expected unrouted DRC
+        run: python3 -m pcb_dev.backends.smoke_libraries --output build/native-libraries
       - name: Preserve native reports and outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: native-kicad-${{ matrix.kicad }}
-          path: build/native-smoke
+          path: |
+            build/native-smoke
+            build/native-libraries
           if-no-files-found: warn
           retention-days: 14
 
