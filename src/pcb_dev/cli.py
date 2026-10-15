@@ -50,6 +50,15 @@ def _parser() -> argparse.ArgumentParser:
     model_check = sub.add_parser("model-check", help="Explicitly send one harmless tool-protocol challenge")
     model_check.add_argument("--config", type=Path, required=True)
     model_check.add_argument("--allow-network", action="store_true")
+    model_eval = sub.add_parser("model-eval", help="Evaluate a configured model on isolated PCB test projects")
+    model_eval.add_argument("--config", type=Path, required=True)
+    model_eval.add_argument("--output", type=Path, required=True)
+    model_eval.add_argument("--case", action="append", dest="case_ids")
+    model_eval.add_argument("--allow-network", action="store_true")
+    model_eval.add_argument("--approve-test-briefs", action="store_true", required=True,
+                            help="Explicitly authorize brief approval only inside isolated test projects")
+    model_eval.add_argument("--max-steps", type=int, default=12)
+    model_eval.add_argument("--max-tokens", type=int, default=256000)
     doctor = sub.add_parser("doctor", help="Inspect optional engineering tools")
     doctor.add_argument("--json", action="store_true")
     doctor.add_argument("--require-kicad", action="store_true")
@@ -253,6 +262,21 @@ def main(argv: list[str] | None = None) -> int:
             if provider.network_enabled and not args.allow_network:
                 raise ValueError("Remote model self-test requires --allow-network")
             result = provider.self_test()
+            print(json_text(result), end="")
+            return int(result.get("passed") is not True)
+        if args.command == "model-eval":
+            from .agent import Budget
+            from .evaluation import run_evaluation
+            from .providers import ChatCompletionsProvider, ProviderConfig
+            from .transactions import read_json
+            config = ProviderConfig.from_dict(read_json(args.config))
+            candidate = ChatCompletionsProvider(config)
+            if candidate.network_enabled and not args.allow_network:
+                raise ValueError("Remote model evaluation requires --allow-network")
+            if "REPLACE" in config.profile.model.upper() or "REPLACE" in config.endpoint.upper():
+                raise ValueError("Replace the template endpoint and served model ID before evaluation")
+            result = run_evaluation(args.output, lambda: ChatCompletionsProvider(config),
+                case_ids=args.case_ids, budget=Budget(max_steps=args.max_steps, max_tokens=args.max_tokens))
             print(json_text(result), end="")
             return int(result.get("passed") is not True)
         if args.command == "doctor":

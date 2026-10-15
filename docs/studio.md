@@ -43,6 +43,8 @@ pcb-dev studio --project /workspace/pcb-projects/ma-carte \
 `model-check` déclenche un véritable appel de protocole, donc consomme de
 l'inférence. Il vérifie la forme des appels d'outils, pas la compétence en
 électronique. Le démarrage du studio seul n'effectue aucune inférence.
+Le [banc de scénarios Qwen](model-evaluation.md) permet ensuite de mesurer le
+parcours sur des projets de test isolés.
 Le profil doit annoncer les capacités, le contexte et les limites réellement
 supportés ; les valeurs de l'exemple ne sont pas un benchmark Qwen.
 

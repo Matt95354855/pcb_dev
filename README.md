@@ -150,7 +150,7 @@ Le fichier `examples/local-model.json` doit être adapté au modèle réellement
 
 [Blocs et paquets](docs/blocks.md) · [Bibliothèques KiCad](docs/libraries.md) ·
 [Modèles SPICE](docs/spice.md) · [Harnais d'agent](docs/agent.md) ·
-[Configuration des fournisseurs](docs/providers.md)
+[Configuration des fournisseurs](docs/providers.md) · [Banc Qwen](docs/model-evaluation.md)
 
 ## Contrôles KiCad natifs
 

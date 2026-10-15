@@ -139,4 +139,4 @@ No supplier order, GPU rental, or model API request runs by default. Code: MIT.
 Vendored KiCad library data retains its [upstream licenses and attribution](examples/library_divider/ATTRIBUTION.md).
 
 Further docs: [blocks/packages](docs/blocks.md), [libraries](docs/libraries.md),
-[SPICE](docs/spice.md), [agent](docs/agent.md), [model endpoints](docs/providers.md).
+[SPICE](docs/spice.md), [agent](docs/agent.md), [model endpoints](docs/providers.md), [Qwen evaluation](docs/model-evaluation.md).
