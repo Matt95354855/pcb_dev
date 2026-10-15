@@ -62,6 +62,10 @@ copie les bibliothèques avec leurs licences dans l'archive. Il prend en charge 
 symboles à une unité et le placement sur la face supérieure. Aucune liaison absente
 ne déclenche de remplacement générique. Voir le [guide de génération depuis les bibliothèques](docs/library-generation.md).
 
+Les interfaces peuvent aussi être reliées explicitement aux broches des composants.
+`--require-physical-ports` exige cette réalisation pour chaque port déclaré ;
+voir le [parcours complet ports et broches](docs/physical-ports.md).
+
 ```sh
 # Deux erreurs intentionnelles : codes de sortie 1
 pcb-dev check examples/invalid_voltage.json
@@ -155,7 +159,7 @@ Le jalon cible de la todo list est une carte USB-C/3,3 V/MCU/LED avec des réfé
 réelles, un schéma et des empreintes qualifiés, un routage, ERC/DRC à zéro et des
 Gerber/BOM/CPL relus. Il n'est **pas encore atteint**.
 
-Les priorités suivantes sont le lien contrôlé entre pins et ports, les symboles multiunités,
+Les priorités suivantes sont les liaisons hiérarchiques entre pins et ports, les symboles multiunités,
 le placement double face, la génération hiérarchique du schéma, le placement/routage,
 les règles fabricant révisées et la relecture des exports. Les connecteurs fournisseurs,
 l'extraction de datasheets, le GPU cloud et les modèles IA ne sont pas provisionnés.

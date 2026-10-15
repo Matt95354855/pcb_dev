@@ -35,11 +35,15 @@ def _parser() -> argparse.ArgumentParser:
     check.add_argument("design", type=Path)
     check.add_argument("--json", action="store_true")
     check.add_argument("--output", type=Path)
+    check.add_argument("--require-physical-ports", action="store_true",
+                       help="Require every declared port to have a net and fitted physical pin bindings")
     build = sub.add_parser("build", help="Build a checked model preview, not a fabrication release")
     build.add_argument("design", type=Path)
     build.add_argument("--output", type=Path, required=True)
     build.add_argument("--bindings", type=Path,
                        help="Use complete pinned KiCad library bindings instead of generic symbols/pads")
+    build.add_argument("--require-physical-ports", action="store_true",
+                       help="Block this draft if any declared port lacks physical pin coverage")
     graph = sub.add_parser("graph", help="Show dependency order and impact of a block change")
     graph.add_argument("design", type=Path)
     graph.add_argument("--impact", metavar="BLOCK_PATH")
@@ -58,6 +62,9 @@ def _parser() -> argparse.ArgumentParser:
     native.add_argument("--kicad-cli", default="kicad-cli")
     native.add_argument("--timeout", type=float, default=120)
     native.add_argument("--json", action="store_true")
+    native.add_argument("--bindings", type=Path,
+                        help="Compare actual library pin types and explicit no-connect evidence")
+    native.add_argument("--require-physical-ports", action="store_true")
     verify = sub.add_parser("verify", help="Verify every file against an artifact manifest")
     verify.add_argument("directory", type=Path)
     archive = sub.add_parser("archive", help="Create a deterministic archive of verified artifacts")
@@ -78,6 +85,8 @@ def _parser() -> argparse.ArgumentParser:
     parity.add_argument("--netlist", type=Path, required=True)
     parity.add_argument("--board", type=Path, required=True)
     parity.add_argument("--json", action="store_true")
+    parity.add_argument("--bindings", type=Path,
+                        help="Use strict library-aware pin and no-connect parity")
     agent = sub.add_parser("agent-demo", help="Replay offline scripted model replies on a copy of a design")
     agent.add_argument("design", type=Path)
     agent.add_argument("--script", type=Path, required=True)
@@ -147,13 +156,17 @@ def _parser() -> argparse.ArgumentParser:
 
 def _native(args) -> int:
     design = load_design(args.design)
+    bound = None
+    if args.bindings is not None:
+        from .bindings import load_bindings
+        bound = load_bindings(design, args.bindings)
     output = args.output.resolve()
-    for source in (args.design, args.board, args.schematic):
+    for source in (args.design, args.board, args.schematic, *([args.bindings] if args.bindings else [])):
         if source.resolve().is_relative_to(output):
             raise ValueError("Check output directory cannot contain input files")
     if output.exists():
         raise ValueError("Check output already exists; choose a new directory")
-    preflight = check_design(design)
+    preflight = check_design(design, require_physical_ports=args.require_physical_ports)
     output.mkdir(parents=True)
     backend = KiCadBackend(executable=args.kicad_cli, timeout=args.timeout)
     evidence = backend.check(args.board, args.schematic, output / "native")
@@ -170,7 +183,11 @@ def _native(args) -> int:
         reports.append(report)
     exported = backend.export_netlist(args.schematic, output / "schematic-netlist.xml")
     if exported["status"] == "passed":
-        mapping = check_parity(design, exported["path"], args.board)
+        if bound is None:
+            mapping = check_parity(design, exported["path"], args.board)
+        else:
+            from .bound_parity import check_bound_parity
+            mapping = check_bound_parity(bound, exported["path"], args.board)
         mapping.metadata["native_netlist_export"] = exported
         if exported["input_sha256"] != evidence["erc"].get("input_sha256"):
             mapping.add(Issue("parity.schematic_changed", "blocker",
@@ -187,6 +204,7 @@ def _native(args) -> int:
                         design_hash=design.fingerprint())
     gate.stage = "native-validation-gate"
     result = {"design_sha256": design.fingerprint(), "fabrication_ready": False,
+              "physical_ports_required": args.require_physical_ports,
               "validation_passed": not gate.blocking,
               "qualification_pending": ["physical library geometry and pinout", "DFM",
                                         "supplier capability revision", "Gerber/BOM/CPL review"],
@@ -215,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
             return int(args.require_kicad and not diagnostic["supported"])
         if args.command == "check":
             design = load_design(args.design)
-            report = check_design(design)
+            report = check_design(design, require_physical_ports=args.require_physical_ports)
             text = report.to_json() + "\n" if args.json else report.to_markdown()
             if args.output:
                 if args.output.resolve() == args.design.resolve():
@@ -224,7 +242,8 @@ def main(argv: list[str] | None = None) -> int:
             print(text, end="" if text.endswith("\n") else "\n")
             return int(report.blocking)
         if args.command == "build":
-            result = build_preview(args.design, args.output, bindings=args.bindings)
+            result = build_preview(args.design, args.output, bindings=args.bindings,
+                                   require_physical_ports=args.require_physical_ports)
             label = "Library draft" if result["kind"] == "library-draft" else "Preview"
             print(f"{label} built: {result['output']}\nFabrication approval: pending native checks and physical qualification")
         elif args.command == "graph":
@@ -267,7 +286,13 @@ def main(argv: list[str] | None = None) -> int:
             catalog = ComponentCatalog.load(args.file)
             print(json_text([asdict(part) for part in catalog.search(args.query, args.category)]), end="")
         elif args.command == "parity":
-            report = check_parity(load_design(args.design), args.netlist, args.board)
+            design = load_design(args.design)
+            if args.bindings is None:
+                report = check_parity(design, args.netlist, args.board)
+            else:
+                from .bindings import load_bindings
+                from .bound_parity import check_bound_parity
+                report = check_bound_parity(load_bindings(design, args.bindings), args.netlist, args.board)
             print(report.to_json() if args.json else report.to_markdown())
             return int(report.blocking)
         elif args.command in {"agent-demo", "agent-run"}:
