@@ -142,7 +142,13 @@ def _netlist_details(path: Path, expected: dict) -> tuple[dict, list[dict]]:
             if node.get("pintype") != expected_type:
                 raise ParityError(f"{ref}.{number}: native pin type/no-connect annotation differs")
             expected_name = "" if pin.name == "~" else pin.name
-            if node.get("pinfunction", "") != expected_name:
+            # KiCad 9 emits the shown name, while 10 appends '_' + physical
+            # number to named node functions. libparts names remain exact in
+            # both versions. Accept only those two source-derived encodings.
+            functions = {expected_name}
+            if expected_name:
+                functions.add(expected_name + "_" + number)
+            if node.get("pinfunction", "") not in functions:
                 raise ParityError(f"{ref}.{number}: native pin function differs from the library")
             if is_nc:
                 nc_nodes.append((ref, number))

@@ -31,6 +31,14 @@ ne prouve pas la présence d'un marqueur de non-connexion. Les autres broches ne
 peuvent recevoir ce suffixe. La convention du nom source `~` est comparée à son
 encodage natif vide, sans modifier les noms réellement définis.
 
+Les noms de `libparts` restent comparés exactement. Le champ `pinfunction` d'un
+nœud possède deux encodages documentés : nom affiché dans KiCad 9, ou ce nom
+suivi de `_` et du numéro physique dans KiCad 10. Seules ces deux chaînes
+calculées depuis le nom source et le numéro exact sont admises ; aucun suffixe
+libre n'est supprimé. Le second encodage est confirmé par l'[exporteur XML
+officiel actuel](https://docs.kicad.org/doxygen/netlist__exporter__xml_8cpp_source.html)
+et les artefacts réellement exportés par KiCad 10.0.2.
+
 Le réseau XML d'une non-connexion doit contenir soit une seule broche, soit des
 broches explicitement NC du même composant, empilées au même point source et
 portant le même nom. Aucun réseau de ce type ne peut partager un net déclaré

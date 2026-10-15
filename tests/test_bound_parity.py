@@ -123,6 +123,14 @@ class BoundParityTests(unittest.TestCase):
         self.xml.find("nets/net[@code='99']").set("name", "different-native-singleton-name")
         self.assertTrue(self.check().passed)
 
+    def test_kicad10_named_node_function_encoding_is_exactly_source_name_and_pin(self):
+        for node in self.xml.findall("nets/net/node"):
+            if node.get("ref") == "J1":
+                node.set("pinfunction", node.get("pinfunction") + "_" + node.get("pin"))
+        self.assertTrue(self.check().passed)
+        self.xml.find("nets/net/node[@ref='J1'][@pin='1']").set("pinfunction", "Pin_1_777")
+        self.assertTrue(self.check().blocking)
+
     def test_missing_marker_wrong_type_or_intrinsic_nc_is_not_an_explicit_nc(self):
         for pin_type in (None, "passive", "no_connect", "input+no_connect", "passive+no_connect+no_connect"):
             with self.subTest(pin_type=pin_type):
