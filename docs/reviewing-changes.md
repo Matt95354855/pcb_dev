@@ -48,3 +48,8 @@ aveuglément une ancienne version qui pourrait contourner les contraintes actuel
 Le registre de tokens reste séparé des versions et des décisions : une revue,
 un redémarrage ou une comparaison ne recrée aucun crédit Claude. Les hashes locaux
 ne constituent pas une signature contre un administrateur qui remplace les fichiers.
+
+
+![Comparaison de versions en démonstration](images/studio-versions.jpg)
+
+Parcours vérifié avec un fournisseur scénarisé explicite, sans modèle connecté.

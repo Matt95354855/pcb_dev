@@ -6,6 +6,7 @@
   let requestPending = false;
   let pollingTimer = null;
   let conversationKey = "";
+  let historyAfterChosen = false;
   const statusLabels = {new: "À vous de commencer", awaiting_input: "Une précision est attendue", brief_proposed: "Brief à valider", working: "Conception en cours", blocked: "Un point reste à résoudre", review_ready: "Brouillon à examiner", patch_review: "Corrections à examiner", error: "Action interrompue"};
   const number = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : 0;
   const tokens = (value) => `${new Intl.NumberFormat("fr-FR").format(number(value))} token${number(value) > 1 ? "s" : ""}`;
@@ -184,7 +185,18 @@
     const display = (value) => value === null ? "—" : typeof value === "object" ? JSON.stringify(value, null, 2) : String(value);
     for (const change of Array.isArray(changes) ? changes : []) {
       const row = element("div", "design-change");
-      row.append(element("div", "change-path", change.path));
+      const labels = {root: "Carte", board: "Format de la carte", parameters: "Paramètres", children: "Blocs", components: "Composants", ports: "Ports", pins: "Broches", position: "Position", constraints: "Contraintes", connections: "Connexions", metadata: "Informations"};
+      let identifier = false, custom = false;
+      const pathLabel = String(change.path).split("/").filter(Boolean).map((part) => {
+        const token = part.replaceAll("~1", "/").replaceAll("~0", "~");
+        const label = identifier || custom ? token : labels[token] || token;
+        custom = custom || (!identifier && token === "parameters");
+        identifier = !identifier && ["children", "components", "ports", "pins"].includes(token);
+        return label;
+      }).join(" › ");
+      const path = element("div", "change-path", pathLabel);
+      path.title = change.path;
+      row.append(path);
       row.append(element("span", "delta-before", display(change.before)), element("span", "", " → "), element("span", "delta-after", display(change.after)));
       target.append(row);
     }
@@ -239,6 +251,7 @@
     }
   }
   function renderHistory(state) {
+    const previousSelection = $("version-before").value + ":" + $("version-after").value;
     const versions = Array.isArray(state.design_versions) ? state.design_versions : [];
     for (const [id, fallback] of [["version-before", versions[0]?.design_hash], ["version-after", versions.at(-1)?.design_hash]]) {
       const select = $(id);
@@ -249,10 +262,16 @@
         option.value = version.design_hash;
         select.append(option);
       }
-      select.value = versions.some((item) => item.design_hash === selected) ? selected : fallback || "";
+      const keepSelection = id !== "version-after" || historyAfterChosen;
+      select.value = keepSelection && versions.some((item) => item.design_hash === selected) ? selected : fallback || "";
       select.disabled = !versions.length;
     }
     $("compare-versions").disabled = !versions.length;
+    if (previousSelection !== $("version-before").value + ":" + $("version-after").value) clearComparison();
+  }
+  function clearComparison() {
+    $("version-comparison").className = "empty-state";
+    $("version-comparison").textContent = "Choisissez deux versions, puis lancez leur comparaison.";
   }
   async function compareVersions() {
     const before = $("version-before").value, after = $("version-after").value;
@@ -350,6 +369,8 @@
     }
   });
   $("compare-versions").addEventListener("click", compareVersions);
+  $("version-after").addEventListener("change", () => { historyAfterChosen = true; clearComparison(); });
+  $("version-before").addEventListener("change", clearComparison);
   $("auth-dialog").addEventListener("cancel", (event) => event.preventDefault());
   $("auth-form").addEventListener("submit", async (event) => {
     event.preventDefault();
