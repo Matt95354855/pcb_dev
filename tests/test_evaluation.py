@@ -96,6 +96,7 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(case["checks"]["actual_build_verified"])
         self.assertFalse(case["checks"]["preflight_passed"])
         self.assertFalse(case["fabrication_ready"])
+        self.assertTrue(case["needs_input"])
 
     def test_wrong_electrical_topology_fails_despite_healthy_metadata_and_build(self):
         result = run_evaluation(self.output, lambda: FixtureProvider(bad=True), case_ids=["ideal-divider"])

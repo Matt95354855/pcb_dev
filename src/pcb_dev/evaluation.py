@@ -173,7 +173,7 @@ def run_evaluation(output, provider_factory, *, case_ids=None, budget=None) -> d
             state = {}
             result.update(passed=False, error="Snapshot unavailable: " + type(exc).__name__)
         result.update(status=state.get("status", "error"), usage=state.get("usage", {}),
-                      needs_input=bool((state.get("brief") or {}).get("questions")),
+                      needs_input=state.get("status") == "awaiting_input" or bool((state.get("brief") or {}).get("questions")),
                       provider_type=type(providers[-1]).__name__ if measured else None,
                       provider_model=getattr(getattr(measured.config, "profile", None), "model", None) if measured else None,
                       demo=bool(measured and measured.is_demo), calls=measured.calls if measured else 0,
