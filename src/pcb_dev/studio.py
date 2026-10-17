@@ -106,7 +106,7 @@ class StudioServer(ThreadingHTTPServer):
             result["studio"] = {"busy": self._busy, "error": self._error}
         return result
 
-    def start_action(self, method: str, value: str | None) -> bool:
+    def start_action(self, method: str, value: Any) -> bool:
         with self._state_lock:
             if self._busy:
                 return False
@@ -115,7 +115,12 @@ class StudioServer(ThreadingHTTPServer):
         def run():
             try:
                 action = getattr(self.manager, method)
-                result = action(expected_hash=value) if method == "approve_brief" else action() if value is None else action(value)
+                if method == "approve_brief":
+                    result = action(expected_hash=value)
+                elif method == "reject_patch":
+                    result = action(**value)
+                else:
+                    result = action() if value is None else action(value)
                 if not isinstance(result, dict):
                     raise ValueError("Project result must be a snapshot")
                 detached = json.loads(_json_bytes(result))
@@ -132,7 +137,9 @@ class StudioServer(ThreadingHTTPServer):
                     if isinstance(failed_state, dict):
                         self._snapshot = failed_state
                     self._snapshot["status"] = "error"
-                    self._error = "Cette action n’a pas abouti. Consultez le journal privé du projet."
+                    self._error = ("Cette version n’a pas pu être vérifiée. Actualisez le projet avant de réessayer."
+                                   if method in ("accept_patch", "reject_patch", "approve_brief") else
+                                   "Cette action n’a pas abouti. Consultez le journal privé du projet.")
             finally:
                 with self._state_lock:
                     self._busy = False
@@ -290,6 +297,18 @@ class _Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/state" and not parsed.query:
             self._send(HTTPStatus.OK, _json_bytes(self.server.detached_state()))
+        elif parsed.path == "/api/versions/compare":
+            try:
+                query = parse_qs(parsed.query, strict_parsing=True, keep_blank_values=True)
+                if set(query) != {"before", "after"} or any(len(values) != 1 for values in query.values()):
+                    raise ValueError("Invalid comparison query")
+                before, after = query["before"][0], query["after"][0]
+                if any(re.fullmatch(r"[0-9a-f]{64}", value) is None for value in (before, after)):
+                    raise ValueError("Invalid comparison hashes")
+                result = self.server.manager.compare_versions(before, after)
+                self._send(HTTPStatus.OK, _json_bytes(result))
+            except (ValueError, OSError, KeyError, AttributeError):
+                self._error(HTTPStatus.CONFLICT, "Ces versions ne peuvent pas être comparées. Leur intégrité doit être vérifiée.")
         elif parsed.path == "/api/artifact":
             try:
                 query = parse_qs(parsed.query, strict_parsing=True, keep_blank_values=True)
@@ -318,7 +337,9 @@ class _Handler(BaseHTTPRequestHandler):
             parsed = self._request_path()
             actions = {"/api/message": ("send_message", "text"),
                        "/api/approve": ("approve_brief", "brief_hash"),
-                       "/api/claude-review": ("request_claude_review", "question")}
+                       "/api/claude-review": ("request_claude_review", "question"),
+                       "/api/patch/accept": ("accept_patch", "proposal_hash"),
+                       "/api/patch/reject": ("reject_patch", "rejection")}
             if parsed.query or parsed.path not in actions:
                 self._error(HTTPStatus.NOT_FOUND, "Action inconnue.")
                 return
@@ -340,13 +361,17 @@ class _Handler(BaseHTTPRequestHandler):
                 raise ValueError("Incomplete request")
             data = _strict_json(raw)
             method, field = actions[parsed.path]
-            expected = {field} if field else set()
+            expected = {"proposal_hash", "reason"} if field == "rejection" else {field} if field else set()
             if type(data) is not dict or set(data) != expected:
                 raise ValueError("Unexpected fields")
-            value = data[field] if field else None
-            if field and (type(value) is not str or not value.strip() or len(value) > MAX_MESSAGE_CHARS):
+            value = data if field == "rejection" else data[field] if field else None
+            if field == "rejection":
+                if (type(data["reason"]) is not str or not data["reason"].strip() or len(data["reason"]) > 4000
+                        or type(data["proposal_hash"]) is not str or re.fullmatch(r"[0-9a-f]{64}", data["proposal_hash"]) is None):
+                    raise ValueError("Invalid human rejection")
+            if field != "rejection" and field and (type(value) is not str or not value.strip() or len(value) > MAX_MESSAGE_CHARS):
                 raise ValueError("Invalid message")
-            if field == "brief_hash" and re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            if field in ("brief_hash", "proposal_hash") and re.fullmatch(r"[0-9a-f]{64}", value) is None:
                 raise ValueError("Invalid displayed brief hash")
             if not self.server.start_action(method, value):
                 self._error(HTTPStatus.CONFLICT, "Une action est déjà en cours. Attendez sa réponse.")

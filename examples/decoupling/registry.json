@@ -1,0 +1,29 @@
+{
+  "libraries": [
+    {
+      "file": "libraries/Connector_Generic.kicad_sym",
+      "kind": "symbols",
+      "name": "symbol-connectors",
+      "sha256": "1f090506088e197b30f25a0658ed5e551da7395712a69103bdeb93bf79560028"
+    },
+    {
+      "file": "libraries/PinHeader_1x02_P2.54mm_Vertical.kicad_mod",
+      "kind": "footprint",
+      "name": "footprint-header",
+      "sha256": "ec752bbcecf855e3d852409e516965b03a5a461abf45002765cb482266cdf973"
+    },
+    {
+      "file": "libraries/Device.kicad_sym",
+      "kind": "symbols",
+      "name": "symbol-device",
+      "sha256": "d5c86d42439e183d0dc7f38f004d3c0aacbeb5612cfc1f24e96a7fc7558f9224"
+    },
+    {
+      "file": "libraries/C_0603_1608Metric.kicad_mod",
+      "kind": "footprint",
+      "name": "footprint-c0603",
+      "sha256": "bd6bc0e5c5017916a9b41e3e85a2109b033a5b4c141c47234c43351f299b1f51"
+    }
+  ],
+  "schema_version": 1
+}

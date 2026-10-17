@@ -286,6 +286,7 @@ def check_design(design: Any, *, require_physical_ports: bool = False) -> CheckR
     from .model import freeze_fingerprint, walk_blocks
     from .expressions import resolve_parameters, evaluate_constraint
     from .physical_ports import check_physical_ports
+    from .decoupling import check_decoupling
 
     if type(require_physical_ports) is not bool:
         raise ValueError("require_physical_ports must be a boolean")
@@ -297,6 +298,9 @@ def check_design(design: Any, *, require_physical_ports: bool = False) -> CheckR
         physical = check_physical_ports(design, require_physical_ports=require_physical_ports)
         report.issues.extend(physical.issues)
         report.metadata["physical_ports"] = physical.metadata["coverage"]
+        decoupling = check_decoupling(design)
+        report.issues.extend(decoupling.issues)
+        report.metadata["decoupling"] = decoupling.metadata
         blocks = dict(walk_blocks(design.root))
         ports = {f"{path}.{port.id}": port for path, block in blocks.items() for port in block.ports}
         nets = _Nets(ports)
@@ -384,7 +388,8 @@ def check_design(design: Any, *, require_physical_ports: bool = False) -> CheckR
         report.metadata["block_count"] = len(blocks)
         report.metadata["port_count"] = len(ports)
         report.metadata["net_count"] = len(groups)
-        report.metadata["completed"] = physical.metadata.get("completed") is True
+        report.metadata["completed"] = (physical.metadata.get("completed") is True
+                                        and decoupling.metadata.get("completed") is True)
     except Exception as exc:
         # Never report a clean preflight after an unexpected checker/model error.
         _issue(report, "preflight.incomplete", f"Preflight could not complete: {type(exc).__name__}: {exc}",

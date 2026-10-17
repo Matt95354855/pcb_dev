@@ -6,7 +6,8 @@
   let requestPending = false;
   let pollingTimer = null;
   let conversationKey = "";
-  const statusLabels = {new: "À vous de commencer", awaiting_input: "Une précision est attendue", brief_proposed: "Brief à valider", working: "Conception en cours", blocked: "Un point reste à résoudre", review_ready: "Brouillon à examiner", error: "Action interrompue"};
+  let historyAfterChosen = false;
+  const statusLabels = {new: "À vous de commencer", awaiting_input: "Une précision est attendue", brief_proposed: "Brief à valider", working: "Conception en cours", blocked: "Un point reste à résoudre", review_ready: "Brouillon à examiner", patch_review: "Corrections à examiner", error: "Action interrompue"};
   const number = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : 0;
   const tokens = (value) => `${new Intl.NumberFormat("fr-FR").format(number(value))} token${number(value) > 1 ? "s" : ""}`;
   function element(tag, className, text) {
@@ -179,6 +180,113 @@
       target.append(button);
     }
   }
+  function changeList(changes) {
+    const target = element("div", "design-changes");
+    const display = (value) => value === null ? "—" : typeof value === "object" ? JSON.stringify(value, null, 2) : String(value);
+    for (const change of Array.isArray(changes) ? changes : []) {
+      const row = element("div", "design-change");
+      const labels = {root: "Carte", board: "Format de la carte", parameters: "Paramètres", children: "Blocs", components: "Composants", ports: "Ports", pins: "Broches", position: "Position", constraints: "Contraintes", connections: "Connexions", metadata: "Informations"};
+      let identifier = false, custom = false;
+      const pathLabel = String(change.path).split("/").filter(Boolean).map((part) => {
+        const token = part.replaceAll("~1", "/").replaceAll("~0", "~");
+        const label = identifier || custom ? token : labels[token] || token;
+        custom = custom || (!identifier && token === "parameters");
+        identifier = !identifier && ["children", "components", "ports", "pins"].includes(token);
+        return label;
+      }).join(" › ");
+      const path = element("div", "change-path", pathLabel);
+      path.title = change.path;
+      row.append(path);
+      row.append(element("span", "delta-before", display(change.before)), element("span", "", " → "), element("span", "delta-after", display(change.after)));
+      target.append(row);
+    }
+    return target;
+  }
+  function renderProposals(state) {
+    $("review-policy").textContent = state.review_patches === true ? "Les corrections du manager attendent votre décision avant d’être appliquées." : "Le manager applique les corrections autorisées de manière autonome. Les décisions déjà en attente restent nécessaires.";
+    const target = $("patch-proposals");
+    const proposals = Array.isArray(state.patch_proposals) ? state.patch_proposals : [];
+    target.replaceChildren();
+    target.className = proposals.length ? "" : "empty-state";
+    if (!proposals.length) target.textContent = "Aucune correction proposée.";
+    const labels = {pending: "À examiner", accepted: "Accepté", rejected: "Rejeté", stale: "Périmé · nouvelle proposition nécessaire"};
+    for (const [index, proposal] of [...proposals].reverse().entries()) {
+      const card = element("article", "proposal-card");
+      card.append(element("h3", "", `Lot de corrections ${proposals.length - index}`), element("span", "proposal-state", labels[proposal.status] || "État inconnu"));
+      card.append(element("p", "", `Motif proposé par le manager : ${proposal.reason || ""}`));
+      card.append(changeList(proposal.changes));
+      const added = Array.isArray(proposal.issue_delta?.added) ? proposal.issue_delta.added : [];
+      const resolved = Array.isArray(proposal.issue_delta?.resolved) ? proposal.issue_delta.resolved : [];
+      card.append(element("p", "", `${resolved.length} constat(s) résolu(s) · ${added.length} nouveau(x). Les contrôles concernent le modèle ; les preuves natives seront à refaire après modification.`));
+      if (added.length || resolved.length) {
+        const details = element("details");
+        details.append(element("summary", "", "Voir les constats qui changent"));
+        for (const issue of resolved) details.append(element("p", "finding", `Résolu : ${issue.message}`));
+        for (const issue of added) details.append(element("p", "finding", `Nouveau : ${issue.message}`));
+        card.append(details);
+      }
+      if (proposal.status === "pending") {
+        const label = element("label", "version-label", "Motif si vous rejetez ce lot");
+        const reason = element("textarea");
+        reason.id = `reject-reason-${index}`;
+        reason.rows = 2;
+        reason.maxLength = 4000;
+        label.htmlFor = reason.id;
+        const buttons = element("div", "proposal-actions");
+        const accept = element("button", "primary-button", "Accepter ces modifications");
+        const reject = element("button", "secondary-button", "Rejeter ce lot");
+        accept.type = reject.type = "button";
+        accept.disabled = reject.disabled = requestPending || Boolean(state.studio?.busy);
+        accept.addEventListener("click", () => action("/api/patch/accept", {proposal_hash: proposal.proposal_hash}));
+        reject.addEventListener("click", () => {
+          if (!reason.value.trim()) { reason.focus(); return; }
+          action("/api/patch/reject", {proposal_hash: proposal.proposal_hash, reason: reason.value.trim()});
+        });
+        buttons.append(accept, reject);
+        card.append(label, reason, buttons);
+      } else if (proposal.decision) {
+        card.append(element("p", "decision-note", `Décision humaine enregistrée${proposal.decision.reason ? " : " + proposal.decision.reason : "."}`));
+      }
+      target.append(card);
+    }
+  }
+  function renderHistory(state) {
+    const previousSelection = $("version-before").value + ":" + $("version-after").value;
+    const versions = Array.isArray(state.design_versions) ? state.design_versions : [];
+    for (const [id, fallback] of [["version-before", versions[0]?.design_hash], ["version-after", versions.at(-1)?.design_hash]]) {
+      const select = $(id);
+      const selected = select.value;
+      select.replaceChildren();
+      for (const [index, version] of versions.entries()) {
+        const option = element("option", "", `Version ${index + 1} · ${version.design_hash.slice(0, 10)} · étape ${version.revision}`);
+        option.value = version.design_hash;
+        select.append(option);
+      }
+      const keepSelection = id !== "version-after" || historyAfterChosen;
+      select.value = keepSelection && versions.some((item) => item.design_hash === selected) ? selected : fallback || "";
+      select.disabled = !versions.length;
+    }
+    $("compare-versions").disabled = !versions.length;
+    if (previousSelection !== $("version-before").value + ":" + $("version-after").value) clearComparison();
+  }
+  function clearComparison() {
+    $("version-comparison").className = "empty-state";
+    $("version-comparison").textContent = "Choisissez deux versions, puis lancez leur comparaison.";
+  }
+  async function compareVersions() {
+    const before = $("version-before").value, after = $("version-after").value;
+    if (!before || !after) return;
+    $("compare-versions").disabled = true;
+    const target = $("version-comparison");
+    try {
+      const result = await api(`/api/versions/compare?before=${encodeURIComponent(before)}&after=${encodeURIComponent(after)}`);
+      target.className = "";
+      target.replaceChildren(element("p", "comparison-summary", result.changes.length ? `${result.changes.length} modification(s) entre ces versions.` : "Ces versions ne présentent aucune différence de contenu."), changeList(result.changes));
+    } catch (error) {
+      target.className = "empty-state";
+      target.textContent = error.message;
+    } finally { $("compare-versions").disabled = false; }
+  }
   function renderUsage(state) {
     const usage = state.usage || {};
     $("qwen-tokens").textContent = tokens(usage.qwen_tokens);
@@ -208,6 +316,8 @@
     renderBrief(state);
     renderDesign(state);
     renderArtifacts(state);
+    renderProposals(state);
+    renderHistory(state);
     renderUsage(state);
     clearTimeout(pollingTimer);
     if (state.studio?.busy) pollingTimer = setTimeout(refresh, 800);
@@ -252,12 +362,15 @@
     if (!question) { $("review-question").focus(); return; }
     action("/api/claude-review", {question});
   });
-  for (const name of ["brief", "design", "files"]) $("tab-" + name).addEventListener("click", () => {
-    for (const other of ["brief", "design", "files"]) {
+  for (const name of ["brief", "design", "files", "reviews", "history"]) $("tab-" + name).addEventListener("click", () => {
+    for (const other of ["brief", "design", "files", "reviews", "history"]) {
       $("tab-" + other).setAttribute("aria-selected", String(name === other));
       $(other + "-panel").hidden = name !== other;
     }
   });
+  $("compare-versions").addEventListener("click", compareVersions);
+  $("version-after").addEventListener("change", () => { historyAfterChosen = true; clearComparison(); });
+  $("version-before").addEventListener("change", clearComparison);
   $("auth-dialog").addEventListener("cancel", (event) => event.preventDefault());
   $("auth-form").addEventListener("submit", async (event) => {
     event.preventDefault();

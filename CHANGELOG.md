@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — 2026-10-17
+
+- Generate optional real KiCad sheet hierarchies with stable component identities,
+  preserved global nets and complete before/after input-closure evidence.
+- Check explicit pin-level decoupling intent and actual pinned top-side PCB pads,
+  keeping unknown source requirements and electrical loop qualification separate.
+- Add optional human patch review, exact proposal decisions, immutable canonical
+  design versions and read-only semantic comparison in the studio.
+- Share the native validation gate between CLI and manager, preserving unrouted
+  DRC blockers and draft-only fabrication status.
+- Document architecture lessons from pinned atopile and tscircuit sources.
 
 - Add isolated manager evaluation scenarios with explicit test-brief approval,
   measured usage, actual artifact checks and JSON/Markdown reports. No live-model

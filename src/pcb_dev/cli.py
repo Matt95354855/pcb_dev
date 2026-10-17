@@ -21,7 +21,6 @@ from .graph import dependency_order, dependents
 from .model import dump_design, freeze_fingerprint, load_design
 from .pipeline import build_preview
 from .parity import check_parity
-from .reports import CheckReport, Issue, gate_reports
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -43,6 +42,10 @@ def _parser() -> argparse.ArgumentParser:
     studio.add_argument("--claude-config", type=Path)
     studio.add_argument("--allow-network", action="store_true")
     studio.add_argument("--bindings", type=Path, help="Host-selected pinned library bindings, never a model path")
+    studio.add_argument("--hierarchical", action="store_true", help="Generate a KiCad sheet per block")
+    review_mode = studio.add_mutually_exclusive_group()
+    review_mode.add_argument("--review-patches", action="store_true", default=None, help="Require human review of model patch proposals")
+    review_mode.add_argument("--auto-patches", action="store_false", dest="review_patches", help="Explicitly return to automatic guarded model patches")
     studio.add_argument("--host", default="127.0.0.1")
     studio.add_argument("--port", type=int, default=8788)
     studio.add_argument("--auth-env", help="Environment variable for the studio access token")
@@ -71,6 +74,7 @@ def _parser() -> argparse.ArgumentParser:
     build = sub.add_parser("build", help="Build a checked model preview, not a fabrication release")
     build.add_argument("design", type=Path)
     build.add_argument("--output", type=Path, required=True)
+    build.add_argument("--hierarchical", action="store_true", help="Generate a KiCad sheet per block")
     build.add_argument("--bindings", type=Path,
                        help="Use complete pinned KiCad library bindings instead of generic symbols/pads")
     build.add_argument("--require-physical-ports", action="store_true",
@@ -186,67 +190,18 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _native(args) -> int:
+    from .native_validation import run_native_validation
+
     design = load_design(args.design)
-    bound = None
-    if args.bindings is not None:
-        from .bindings import load_bindings
-        bound = load_bindings(design, args.bindings)
     output = args.output.resolve()
     for source in (args.design, args.board, args.schematic, *([args.bindings] if args.bindings else [])):
         if source.resolve().is_relative_to(output):
             raise ValueError("Check output directory cannot contain input files")
-    if output.exists():
-        raise ValueError("Check output already exists; choose a new directory")
-    preflight = check_design(design, require_physical_ports=args.require_physical_ports)
-    output.mkdir(parents=True)
-    backend = KiCadBackend(executable=args.kicad_cli, timeout=args.timeout)
-    evidence = backend.check(args.board, args.schematic, output / "native")
-    reports = [preflight]
-    for stage, item in evidence.items():
-        complete = bool(item.get("executed") and item.get("native_report") is not None)
-        report = CheckReport(stage, metadata={
-            "completed": complete, "native": complete, "design_hash": design.fingerprint(),
-            "evidence": item,
-        })
-        if item["status"] != "passed":
-            report.add(Issue(f"{stage}.{item['status']}", "blocker",
-                             item.get("reason") or "Native check failed"))
-        reports.append(report)
-    exported = backend.export_netlist(args.schematic, output / "schematic-netlist.xml")
-    if exported["status"] == "passed":
-        if bound is None:
-            mapping = check_parity(design, exported["path"], args.board)
-        else:
-            from .bound_parity import check_bound_parity
-            mapping = check_bound_parity(bound, exported["path"], args.board)
-        mapping.metadata["native_netlist_export"] = exported
-        if mapping.metadata.get("netlist_sha256") != exported.get("output_sha256"):
-            mapping.add(Issue("parity.netlist_changed", "blocker",
-                              "Exported netlist changed before model parity comparison"))
-        if exported["input_sha256"] != evidence["erc"].get("input_sha256"):
-            mapping.add(Issue("parity.schematic_changed", "blocker",
-                              "Schematic changed between ERC and netlist export"))
-        if mapping.metadata.get("board_sha256") != evidence["drc"].get("input_sha256"):
-            mapping.add(Issue("parity.board_changed", "blocker",
-                              "Board changed between DRC and model parity comparison"))
-    else:
-        mapping = CheckReport("model-parity", metadata={"completed": False})
-        mapping.add(Issue("parity.netlist_unverified", "blocker",
-                          exported.get("reason") or "Native schematic netlist could not be verified"))
-    reports.append(mapping)
-    gate = gate_reports(reports, required_stages=("preflight", "erc", "drc", "model-parity"),
-                        design_hash=design.fingerprint())
-    gate.stage = "native-validation-gate"
-    result = {"design_sha256": design.fingerprint(), "fabrication_ready": False,
-              "physical_ports_required": args.require_physical_ports,
-              "validation_passed": not gate.blocking,
-              "qualification_pending": ["physical library geometry and pinout", "DFM",
-                                        "supplier capability revision", "Gerber/BOM/CPL review"],
-              "reports": [report.to_dict() for report in reports], "gate": gate.to_dict()}
-    atomic_write(output / "checks.json", json_text(result))
-    atomic_write(output / "checks.md", "\n\n".join(report.to_markdown() for report in [*reports, gate]))
-    print(json_text(result) if args.json else gate.to_markdown())
-    return 1 if gate.blocking else 0
+    result, markdown = run_native_validation(design, args.board, args.schematic, output,
+        bindings=args.bindings, backend=KiCadBackend(executable=args.kicad_cli, timeout=args.timeout),
+        require_physical_ports=args.require_physical_ports)
+    print(json_text(result) if args.json else markdown)
+    return int(not result["validation_passed"])
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -304,7 +259,7 @@ def main(argv: list[str] | None = None) -> int:
             return int(report.blocking)
         if args.command == "build":
             result = build_preview(args.design, args.output, bindings=args.bindings,
-                                   require_physical_ports=args.require_physical_ports)
+                                   require_physical_ports=args.require_physical_ports, hierarchical=args.hierarchical)
             label = "Library draft" if result["kind"] == "library-draft" else "Preview"
             print(f"{label} built: {result['output']}\nFabrication approval: pending native checks and physical qualification")
         elif args.command == "graph":

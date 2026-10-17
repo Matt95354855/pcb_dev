@@ -1,0 +1,196 @@
+{
+  "board": {
+    "height_mm": 40,
+    "layers": 2,
+    "manufacturer": "jlcpcb",
+    "width_mm": 60
+  },
+  "connections": [
+    {
+      "net": "VDD",
+      "source": "board.source.supply",
+      "target": "board.load.supply"
+    },
+    {
+      "net": "GND",
+      "source": "board.source.ground",
+      "target": "board.load.ground"
+    }
+  ],
+  "metadata": {
+    "assumptions": [
+      "J1 is a declared ideal source, J2 a test adapter for an unspecified load, not a real MCU.",
+      "The 25 mA demand, capacitor nominal/rating and 1.2 mm limit are disposable fixture assumptions, not manufacturer specifications.",
+      "The actual official C symbol and capacitor footprint are pinned; no commercial capacitor or silicon pinout is qualified.",
+      "Only power-pad centre distance is checked; return routing, loop inductance, ESR/ESL, DC bias and tolerance effects remain unverified."
+    ],
+    "datasheet_verified": false,
+    "fixture_only": true,
+    "physical_part_qualified": false
+  },
+  "name": "Declared_Decoupling_Fixture",
+  "root": {
+    "children": [
+      {
+        "components": [
+          {
+            "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+            "id": "j1",
+            "pins": {
+              "1": "VDD",
+              "2": "GND"
+            },
+            "position": {
+              "rotation": 0,
+              "side": "top",
+              "x_mm": 10,
+              "y_mm": 20
+            },
+            "reference": "J1",
+            "value": "External ideal fixture"
+          }
+        ],
+        "id": "source",
+        "ports": [
+          {
+            "direction": "output",
+            "id": "supply",
+            "kind": "power",
+            "max_current_ma": 1000,
+            "net": "VDD",
+            "pin_bindings": [
+              {
+                "component": "j1",
+                "pin": "1"
+              }
+            ],
+            "voltage_max": 3.6,
+            "voltage_min": 3
+          },
+          {
+            "direction": "passive",
+            "id": "ground",
+            "kind": "ground",
+            "net": "GND",
+            "pin_bindings": [
+              {
+                "component": "j1",
+                "pin": "2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "children": [
+          {
+            "components": [
+              {
+                "footprint": "Capacitor_SMD:C_0603_1608Metric",
+                "id": "c1",
+                "parameters": {
+                  "applied_voltage_v": 3.6,
+                  "capacitance_f": 1e-07,
+                  "voltage_rating_v": 16
+                },
+                "pins": {
+                  "1": "VDD",
+                  "2": "GND"
+                },
+                "position": {
+                  "rotation": 270,
+                  "side": "top",
+                  "x_mm": 32.54,
+                  "y_mm": 21.775
+                },
+                "reference": "C1",
+                "value": "100nF, declared fixture assumption"
+              }
+            ],
+            "id": "decaps"
+          }
+        ],
+        "components": [
+          {
+            "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+            "id": "j2",
+            "pins": {
+              "1": "GND",
+              "2": "VDD"
+            },
+            "position": {
+              "rotation": 90,
+              "side": "top",
+              "x_mm": 30,
+              "y_mm": 20
+            },
+            "reference": "J2",
+            "value": "External ideal fixture"
+          }
+        ],
+        "id": "load",
+        "ports": [
+          {
+            "current_draw_ma": 25,
+            "direction": "input",
+            "id": "supply",
+            "kind": "power",
+            "net": "VDD",
+            "pin_bindings": [
+              {
+                "component": "j2",
+                "pin": "2"
+              }
+            ],
+            "voltage_max": 3.6,
+            "voltage_min": 3
+          },
+          {
+            "direction": "passive",
+            "id": "ground",
+            "kind": "ground",
+            "net": "GND",
+            "pin_bindings": [
+              {
+                "component": "j2",
+                "pin": "1"
+              }
+            ]
+          }
+        ],
+        "resources": {
+          "decoupling": [
+            {
+              "capacitance_max_f": 1.1e-07,
+              "capacitance_min_f": 9e-08,
+              "capacitor": {
+                "component": "decaps.c1",
+                "power_pin": "1",
+                "return_pin": "2"
+              },
+              "id": "supply_pin_1",
+              "max_distance_mm": 1.2,
+              "power_net": "VDD",
+              "power_pin": {
+                "component": "j2",
+                "pin": "2"
+              },
+              "rail_max_voltage_v": 3.6,
+              "return_net": "GND",
+              "source": {
+                "kind": "user_requirement",
+                "reference": "pcb-dev disposable decoupling test fixture",
+                "revision": "1",
+                "section": "Explicit synthetic acceptance conditions, not a datasheet"
+              },
+              "voltage_derating_factor": 0.5
+            }
+          ]
+        }
+      }
+    ],
+    "id": "board"
+  },
+  "schema_version": 1,
+  "version": "0.1.0"
+}
