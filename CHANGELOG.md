@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add isolated manager evaluation scenarios with explicit test-brief approval,
+  measured usage, actual artifact checks and JSON/Markdown reports. No live-model
+  score or physical board qualification is claimed by the scripted tests.
+
 ## 0.4.0 — 2026-10-15
 
 - Add a prompt-first French studio with asynchronous model work, human brief

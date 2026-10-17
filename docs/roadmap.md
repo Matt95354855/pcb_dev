@@ -156,7 +156,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | N5.5 | Partiel | Traces entrées/sorties/outils/décisions avec secrets masqués ; conservation centralisée à ajouter |
 | N5.6 | Partiel | Outils de design sans fichier/réseau/shell ; conteneur système externe requis pour vraie sandbox |
 | N5.7 | Livré pour métadonnées | Refus des régressions et des altérations de gel/exigences protégées |
-| N6–N7 | Partiel | Studio conversationnel et approbation du brief disponibles ; évaluation d'un Qwen réel encore à faire |
+| N6–N7 | Partiel | Studio et banc de scénarios logiciels versionnés disponibles ; mesures d'un vrai Qwen et benchmark physique encore à faire |
 
 ## Prochain incrément recommandé
 
