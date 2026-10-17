@@ -8,6 +8,7 @@ Providers are injected and may use a network only under their host configuration
 from __future__ import annotations
 
 from pathlib import Path
+import tempfile
 import time
 
 from .agent import Budget, ModelReply
@@ -51,15 +52,23 @@ class _MeasuredProvider:
 
 
 def _build_matches(manager, design) -> bool:
-    """Read actual verified artifacts, including the bundled canonical source."""
+    """Compare actual generic draft bytes with an independent canonical build.
+
+    A freshly rewritten manifest alone cannot establish that the observed files
+    are the generator's output. These cases use no external library bindings.
+    """
+    from .pipeline import build_preview
+
+    expected = None
     for item in manager.snapshot()["artifacts"]:
         if not item["relative_path"].endswith("/build-lock.json"):
             continue
         lock_path = manager.artifact_path(item["relative_path"])
         lock = read_json(lock_path)
-        if lock.get("design_sha256") != design.fingerprint() or lock.get("fabrication_ready") is not False:
+        if (lock.get("design_sha256") != design.fingerprint() or lock.get("fabrication_ready") is not False
+                or lock.get("kind") != "preview"):
             continue
-        verify_manifest(lock_path.parent)
+        observed = verify_manifest(lock_path.parent)
         if load_design(lock_path.parent / "design.json").fingerprint() != design.fingerprint():
             continue
         generated = lock.get("generated", {})
@@ -68,7 +77,15 @@ def _build_matches(manager, design) -> bool:
             continue
         prefix = lock_path.parent.relative_to(manager.directory)
         paths = [manager.artifact_path((prefix / generated[key]).as_posix()) for key in required]
-        if all(path.stat().st_size > 0 for path in paths):
+        if not all(path.stat().st_size > 0 for path in paths):
+            continue
+        if expected is None:
+            with tempfile.TemporaryDirectory(prefix=".acceptance-build-", dir=manager.directory.parent) as temporary:
+                acceptance = Path(temporary)
+                atomic_write_json(design.to_dict(), acceptance / "design.json")
+                build_preview(acceptance / "design.json", acceptance / "preview")
+                expected = verify_manifest(acceptance / "preview")
+        if observed == expected:
             return True
     return False
 
@@ -86,10 +103,11 @@ def _case_matches(case_id, design, directory) -> bool:
     # Each fixed fixture condition must be protected by an actual constraint,
     # not merely mentioned in a tautology or in the assistant's narrative.
     for key, value in expected.items():
-        mutated = Design.from_dict(design.to_dict())
-        mutated.root.parameters[key] = value * 1.1
-        if not any(issue.code.startswith("constraint.") for issue in check_design(mutated).issues):
-            return False
+        for factor in (0.9, 1.1):
+            mutated = Design.from_dict(design.to_dict())
+            mutated.root.parameters[key] = value * factor
+            if not any(issue.code.startswith("constraint.") for issue in check_design(mutated).issues):
+                return False
     manifest = generate_spice(design, {"kind": "op"}, directory / "acceptance.cir")
     models = manifest["models"]
     resistors = [model for model in models if model["kind"] == "R"]

@@ -144,3 +144,41 @@ class EvaluationTests(unittest.TestCase):
             result = run_evaluation(self.output, FixtureProvider, case_ids=["diagnostic-draft"])
         self.assertFalse(result["passed"])
         self.assertIn("error", result["cases"][0])
+
+    def test_rewritten_manifest_cannot_attest_modified_generated_files(self):
+        from pcb_dev.artifacts import write_manifest
+        from pcb_dev.evaluation import _build_matches
+        for generated in ("board", "schematic", "netlist", "rules", "project", "manifest"):
+            with self.subTest(generated=generated):
+                def altered(manager, design):
+                    for artifact in manager.snapshot()["artifacts"]:
+                        if artifact["relative_path"].endswith("/build-lock.json"):
+                            lock_path = manager.artifact_path(artifact["relative_path"])
+                            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+                            (lock_path.parent / lock["generated"][generated]).write_text("invalid generated fixture\n", encoding="utf-8")
+                            write_manifest(lock_path.parent, design_hash=design.fingerprint())
+                            break
+                    return _build_matches(manager, design)
+                with patch("pcb_dev.evaluation._build_matches", side_effect=altered):
+                    result = run_evaluation(Path(self.temp.name) / generated, FixtureProvider, case_ids=["diagnostic-draft"])
+                case = result["cases"][0]
+                self.assertTrue(case["checks"]["preflight_passed"])
+                self.assertFalse(case["checks"]["actual_build_verified"])
+                self.assertFalse(result["passed"])
+
+    def test_fixed_condition_constraints_must_reject_both_increases_and_decreases(self):
+        for operator in ("<=", ">="):
+            with self.subTest(operator=operator):
+                original = fixture
+                def one_sided(divider):
+                    design = original(divider)
+                    if divider:
+                        design["root"]["constraints"][0]["expression"] = f"vin_v {operator} 5 and r_top_ohm {operator} 10000 and r_bottom_ohm {operator} 10000"
+                    return design
+                with patch(__name__ + ".fixture", side_effect=one_sided):
+                    result = run_evaluation(Path(self.temp.name) / ("upper" if operator == "<=" else "lower"), FixtureProvider, case_ids=["ideal-divider"])
+                case = result["cases"][0]
+                self.assertTrue(case["checks"]["preflight_passed"])
+                self.assertTrue(case["checks"]["actual_build_verified"])
+                self.assertFalse(case["checks"]["case_conditions"])
+                self.assertFalse(result["passed"])
