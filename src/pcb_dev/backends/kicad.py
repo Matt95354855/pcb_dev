@@ -21,6 +21,8 @@ import tempfile
 import uuid
 import xml.etree.ElementTree as ET
 
+from ..hierarchy import assert_snapshot, schematic_snapshot
+
 from .runner import ToolRunner
 
 PREVIEW_MARKER = "PCBDEV_PREVIEW_ONLY"
@@ -122,7 +124,7 @@ def _schematic(name: str, stem: str, components: list) -> str:
     return "\n".join(lines)
 
 
-def _board(name: str, board: dict, components: list, net_codes: dict) -> str:
+def _board(name: str, board: dict, components: list, net_codes: dict, sheet_plan=None) -> str:
     width, height = board["width_mm"], board["height_mm"]
     lines = ['(kicad_pcb (version 20241229) (generator "pcb_dev") (generator_version "9.0")',
              '  (general (thickness 1.6)) (paper "A4")',
@@ -155,7 +157,7 @@ def _board(name: str, board: dict, components: list, net_codes: dict) -> str:
                       f'    (property "Value" {_q(component["value"])} (at 0 2 {_num(rotation)}) (layer "{side}.Fab") (effects (font (size 1 1)){" (justify mirror)" if side == "B" else ""}))',
                       f'    (property "RequestedFootprint" {_q(component.get("footprint", ""))} (at 0 0 {_num(rotation)}) (layer "{side}.Fab") (hide yes) (effects (font (size 1 1))))',
                       f'    (property "PCBDevStatus" "{PREVIEW_MARKER}" (at 0 0 {_num(rotation)}) (layer "{side}.Fab") (hide yes) (effects (font (size 1 1))))',
-                      f'    (path "/{_uuid(name+":schematic")}/{_uuid(path+":symbol")}")',
+                      f'    (path "{sheet_plan.owner(path).instance_path if sheet_plan else "/" + _uuid(name+":schematic")}/{_uuid(path+":symbol")}")',
                       f'    (attr smd{" dnp" if not component.get("fitted", True) else ""})'])
         for i, pin in enumerate(pins):
             px = i * 2.54
@@ -169,7 +171,7 @@ def _board(name: str, board: dict, components: list, net_codes: dict) -> str:
     return "\n".join(lines)
 
 
-def _netlist(name: str, components: list, net_codes: dict) -> str:
+def _netlist(name: str, components: list, net_codes: dict, sheet_plan=None) -> str:
     root = ET.Element("export", version="E")
     design = ET.SubElement(root, "design")
     ET.SubElement(design, "source").text = name
@@ -180,7 +182,9 @@ def _netlist(name: str, components: list, net_codes: dict) -> str:
         ET.SubElement(comp, "value").text = component["value"]
         ET.SubElement(comp, "footprint").text = f'PCBDev:GenericPreview_{len(component["pins"])}'
         ET.SubElement(comp, "libsource", lib="PCBDev", part=_lib_name(component), description=PREVIEW_MARKER)
-        ET.SubElement(comp, "sheetpath", names="/", tstamps="/" + _uuid(name + ":schematic") + "/")
+        sheet = sheet_plan.owner(path) if sheet_plan else None
+        ET.SubElement(comp, "sheetpath", names=sheet.human_path if sheet else "/",
+                      tstamps=sheet.netlist_path if sheet else "/" + _uuid(name + ":schematic") + "/")
         ET.SubElement(comp, "tstamps").text = _uuid(path + ":symbol")
     parts = ET.SubElement(root, "libparts")
     libraries = {_lib_name(c): c for _, c in components}
@@ -201,32 +205,49 @@ def _netlist(name: str, components: list, net_codes: dict) -> str:
     return ET.tostring(root, encoding="unicode", xml_declaration=True) + "\n"
 
 
-def generate(raw_design: dict, output_dir: Path) -> dict[str, Path]:
+def generate(raw_design: dict, output_dir: Path, *, hierarchical: bool = False) -> dict[str, Path]:
     """Write deterministic, self-contained editable previews; no tools are executed.
 
     Validate the canonical model before calling this low-level generator.
     Output filenames use a safe slug independent of user-supplied paths.
     """
+    if type(hierarchical) is not bool:
+        raise ValueError("hierarchical must be an explicit host boolean")
     name = raw_design["name"]
     stem = re.sub(r"[^A-Za-z0-9_-]+", "_", name).strip("_")[:80] or "pcb_dev"
     components = sorted(_components(raw_design["root"]), key=lambda item: (item[1]["reference"], item[0]))
+    sheet_plan = None
+    if hierarchical:
+        from ..hierarchy import plan_sheets
+        from ..model import Design
+        sheet_plan = plan_sheets(Design.from_dict(raw_design), stem, _uuid(name + ":schematic"))
     net_names = sorted({net for _, c in components for net in c["pins"].values() if net})
     net_codes = {net: code for code, net in enumerate(net_names, 1)}
     board = raw_design["board"]
     if board.get("layers", 2) not in (2, 4) or min(float(_num(board["width_mm"])), float(_num(board["height_mm"]))) <= 0:
         raise ValueError("board requires positive finite dimensions and 2 or 4 layers")
     content = {
-        "board": (f"{stem}.kicad_pcb", _board(name, board, components, net_codes)),
+        "board": (f"{stem}.kicad_pcb", _board(name, board, components, net_codes, sheet_plan)),
         "schematic": (f"{stem}.kicad_sch", _schematic(name, stem, components)),
-        "netlist": (f"{stem}.net", _netlist(name, components, net_codes)),
+        "netlist": (f"{stem}.net", _netlist(name, components, net_codes, sheet_plan)),
         "project": (f"{stem}.kicad_pro", json.dumps({"meta": {"version": 1, "filename": f"{stem}.kicad_pro"}, "board": {"design_settings": {"rules": {"min_clearance": 0.2, "min_track_width": 0.25, "min_via_diameter": 0.6, "min_through_hole_diameter": 0.3}}}}, sort_keys=True, indent=2) + "\n"),
         "rules": (f"{stem}.kicad_dru", '(version 1)\n(rule "PCBDev illustrative minimums - verify manufacturer stackup"\n  (constraint clearance (min 0.2mm))\n  (constraint track_width (min 0.25mm)))\n'),
     }
+    if sheet_plan:
+        from ..hierarchy import assemble_sheet
+        from ..sexpr import dumps, parse_quoted
+        for sheet in sheet_plan.sheets:
+            local = [(path, component) for path, component in components
+                     if path.rsplit(".", 1)[0] == sheet.block_path]
+            tree = assemble_sheet(parse_quoted(_schematic(name, stem, local)), sheet, sheet_plan)
+            content[sheet.key] = (sheet.filename, dumps(tree) + "\n")
     manifest = {"schema_version": 1, "generator": "pcb_dev", "fabrication_ready": False,
                 "preview_marker": PREVIEW_MARKER, "routed": False,
                 "limitations": ["Generic unverified footprints and passive pin symbols", "No copper routes", "No native ERC or DRC has been executed by generation", "Rule values are illustrative, not manufacturer qualification"],
                 "components": [{"path": p, "reference": c["reference"], "requested_footprint": c.get("footprint", ""), "position_explicit": bool(c.get("position"))} for p, c in components],
                 "artifacts": {key: {"file": filename, "sha256": hashlib.sha256(text.encode()).hexdigest()} for key, (filename, text) in sorted(content.items())}}
+    if sheet_plan:
+        manifest["hierarchy"] = sheet_plan.metadata()
     content["manifest"] = ("generation-manifest.json", json.dumps(manifest, sort_keys=True, indent=2, allow_nan=False) + "\n")
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
@@ -360,14 +381,22 @@ class KiCadBackend:
                 "reason": "" if supported else "KiCad CLI 9 or 10 is required", "tool": result.to_dict()}
 
     def _check_one(self, stage: str, input_file: Path, output_dir: Path, diagnostic: dict) -> dict:
-        input_file = Path(input_file).resolve()
+        supplied = Path(input_file).absolute()
+        input_file = supplied.resolve()
         report_path = output_dir / f"{stage}.json"
         evidence = {"stage": stage, "status": diagnostic["status"], "executed": False,
-                    "input_sha256": _sha256(input_file) if input_file.is_file() else None,
+                    "input_sha256": _sha256(input_file) if stage != "erc" and input_file.is_file() else None,
                     "tool_version": diagnostic["version"], "report_path": str(report_path),
                     "violations": [], "returncode": None}
         if not input_file.is_file():
             return dict(evidence, status="failed", reason="Input artifact is missing")
+        snapshot = None
+        if stage == "erc":
+            try:
+                snapshot = schematic_snapshot(supplied)
+                evidence.update(snapshot)
+            except (OSError, ValueError, UnicodeError) as exc:
+                return dict(evidence, status="failed", reason=f"Invalid schematic input closure: {exc}")
         if not diagnostic["supported"]:
             return dict(evidence, reason=diagnostic["reason"])
         # A fresh isolated report directory prevents stale reports from passing.
@@ -392,7 +421,9 @@ class KiCadBackend:
                     raise ValueError("native report refers to another source artifact")
                 if report["kicad_version"].split(".")[0] != str(diagnostic["version"]).split(".")[0]:
                     raise ValueError("native report version does not match installed KiCad")
-                if not input_file.is_file() or _sha256(input_file) != evidence["input_sha256"]:
+                if snapshot is not None:
+                    assert_snapshot(supplied, snapshot)
+                elif not input_file.is_file() or _sha256(input_file) != evidence["input_sha256"]:
                     raise ValueError("input artifact changed while checks were running")
                 if report_path.is_symlink():
                     raise ValueError("refusing to overwrite report symlink")
@@ -411,17 +442,26 @@ class KiCadBackend:
                 "drc": self._check_one("drc", board, output_dir, diagnostic)}
 
     def export_netlist(self, schematic: Path, output: Path) -> dict:
-        """Bind a fresh native KiCad XML netlist to the exact schematic digest."""
-        source, target = Path(schematic).resolve(), Path(output).absolute()
+        """Bind native XML to the entire safe schematic dependency closure."""
+        supplied = Path(schematic).absolute()
+        source, target = supplied.resolve(), Path(output).absolute()
         evidence = {"stage": "native_netlist", "status": "failed", "executed": False,
-                    "input_sha256": _sha256(source) if source.is_file() else None,
+                    "input_sha256": None,
                     "output_sha256": None, "path": str(target), "returncode": None}
         if not source.is_file():
             return dict(evidence, reason="Input schematic is missing")
+        try:
+            snapshot = schematic_snapshot(supplied)
+            evidence.update(snapshot)
+        except (OSError, ValueError, UnicodeError) as exc:
+            return dict(evidence, reason=f"Invalid schematic input closure: {exc}")
         if target.is_symlink():
             return dict(evidence, reason="Netlist destination is a symlink")
         if target.resolve() == source:
             return dict(evidence, reason="Netlist output must not overwrite the source schematic")
+        dependencies = [source.parent / name for name in snapshot["input_closure"]["files"]]
+        if any(target.resolve() == path or (target.exists() and target.samefile(path)) for path in dependencies):
+            return dict(evidence, reason="Netlist output must not overwrite any schematic dependency")
         diagnostic = self.diagnose()
         evidence["tool_version"] = diagnostic["version"]
         if not diagnostic["supported"]:
@@ -445,8 +485,7 @@ class KiCadBackend:
                 native_source = document.findtext("design/source")
                 if native_source and Path(native_source).name != source.name:
                     raise ValueError("Native netlist refers to a different schematic")
-                if _sha256(source) != evidence["input_sha256"]:
-                    raise ValueError("Schematic changed during netlist export")
+                assert_snapshot(supplied, snapshot)
                 if target.is_symlink():
                     raise ValueError("Netlist destination became a symlink")
                 target.write_bytes(raw)
@@ -462,7 +501,8 @@ class KiCadBackend:
         """
         if layers not in (2, 4):
             raise ValueError("layers must be 2 or 4")
-        board, schematic = Path(board).resolve(), Path(schematic).resolve()
+        supplied_schematic = Path(schematic).absolute()
+        board, schematic = Path(board).resolve(), supplied_schematic.resolve()
         output_dir = Path(output_dir).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
         diagnostic = self.diagnose()
@@ -476,10 +516,18 @@ class KiCadBackend:
             ("schematic_svg", schematic, ["sch", "export", "svg", "--exclude-drawing-sheet"], None, ("*.svg",)),
         ]
         for key, source, args, filename, patterns in specifications:
-            item = {"status": "failed", "executed": False, "paths": [], "tool_version": diagnostic["version"], "input_sha256": _sha256(source) if source.is_file() else None}
+            item = {"status": "failed", "executed": False, "paths": [], "tool_version": diagnostic["version"], "input_sha256": _sha256(source) if key != "schematic_svg" and source.is_file() else None}
             if not source.is_file():
                 products[key] = dict(item, reason="Input artifact is missing")
                 continue
+            snapshot = None
+            if key == "schematic_svg":
+                try:
+                    snapshot = schematic_snapshot(supplied_schematic)
+                    item.update(snapshot)
+                except (OSError, ValueError, UnicodeError) as exc:
+                    products[key] = dict(item, reason=f"Invalid schematic input closure: {exc}")
+                    continue
             if not diagnostic["supported"]:
                 products[key] = dict(item, status=diagnostic["status"], reason=diagnostic["reason"])
                 continue
@@ -489,10 +537,16 @@ class KiCadBackend:
                 result = self.runner.run(self.executable, [*args, "--output", str(target), str(source)], source.parent, timeout=self.timeout)
                 files = sorted({path for pattern in patterns for path in temp.glob(pattern) if path.is_file() and not path.is_symlink() and path.stat().st_size > 0})
                 item.update(executed=result.executed, returncode=result.returncode, tool=result.to_dict())
-                if result.status != "success" or not files or _sha256(source) != item["input_sha256"]:
+                if result.status != "success" or not files:
                     products[key] = dict(item, reason="Tool failed, source changed, or expected artifact is missing")
                     continue
                 try:
+                    if snapshot is not None:
+                        assert_snapshot(supplied_schematic, snapshot)
+                        if len(files) != len(snapshot["input_closure"]["files"]):
+                            raise ValueError("Schematic SVG export did not produce one file for every sheet")
+                    elif _sha256(source) != item["input_sha256"]:
+                        raise ValueError("Source changed during native export")
                     _validate_export(key, files, layers)
                 except (OSError, ValueError, KeyError, TypeError, ET.ParseError) as exc:
                     products[key] = dict(item, reason=f"Invalid export artifacts: {exc}")

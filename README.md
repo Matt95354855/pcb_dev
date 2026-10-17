@@ -53,6 +53,11 @@ est explicitement scénarisé : il génère une carte générique vide pour essa
 le parcours, sans modèle connecté. Pour utiliser votre Qwen sur le Pod, voir le
 [guide de configuration et de reprise](docs/studio.md) et le [guide Runpod](docs/runpod-claude.md).
 
+Ajouter `--review-patches` pour examiner les corrections avant de les appliquer,
+et `--hierarchical` pour générer une feuille KiCad par bloc. Le studio conserve
+les versions du design et permet de comparer leurs changements. Voir la
+[revue par lots](docs/reviewing-changes.md) et les [schémas hiérarchiques](docs/hierarchical-schematics.md).
+
 Le noyau reste utilisable directement en ligne de commande :
 
 ```sh
@@ -84,7 +89,8 @@ ne déclenche de remplacement générique. Voir le [guide de génération depuis
 
 Les interfaces peuvent aussi être reliées explicitement aux broches des composants.
 `--require-physical-ports` exige cette réalisation pour chaque port déclaré ;
-voir le [parcours complet ports et broches](docs/physical-ports.md).
+voir le [parcours complet ports et broches](docs/physical-ports.md). Les [règles de découplage](docs/decoupling.md)
+vérifient séparément le câblage/ratings déclarés et la proximité des vrais pads du PCB.
 
 ```sh
 # Deux erreurs intentionnelles : codes de sortie 1
@@ -111,15 +117,15 @@ pcb-dev archive build/demo --output build/demo-preview.zip
 | Paramètres | Héritage, surcharge locale, équations arithmétiques sûres et contraintes booléennes |
 | Amont | Compatibilité de tension au pire cas, type, polarité, logique, protocole, impédance et conflits de sorties |
 | Puissance | Somme des charges par net transitif, capacité des sources et limites déclarées des composants |
-| Ressources | Adresses I²C, dépendances de séquencement, délais déclarés, invalidation de blocs gelés |
+| Ressources | Adresses I²C, séquencement, règles explicites de découplage et invalidation de blocs gelés |
 | Traçabilité | Rapports JSON/Markdown, empreintes SHA-256, dérogations humaines liées au design exact |
-| KiCad | Schéma/PCB génériques ou bibliothèques épinglées, projet autonome, règles et netlist ; adaptateur natif ERC/DRC et exports |
+| KiCad | Schéma plat ou hiérarchique, PCB générique ou bibliothèques épinglées, projet autonome ; ERC/DRC et preuves couvrant toutes les feuilles |
 | Fabrication | BOM générale/JLCPCB, CPL indicatif, profils de planification conservateurs, estimation largeur/chute de tension |
 | Artifacts | Construction dans un répertoire temporaire, manifeste d'intégrité et ZIP reproductible |
 | Revue | Visionneuse HTML locale par bloc et documentation du design générée |
 | Paquets et bibliothèques | Versions exactes, hash, variantes DNP, inventaires de pins/pads et registre local |
 | Simulation | SPICE explicite R/C/L/V/I, adaptateur NgSpice et explorations de tolérances reproductibles |
-| Studio et manager | Prompt sans JSON préalable, brief approuvé, plan, outils de conception, conversation persistante et reprise |
+| Studio et manager | Prompt sans JSON préalable, brief approuvé, plan, outils de conception, revue optionnelle des corrections, versions et reprise |
 | Qwen et Claude | Qwen auto-hébergé, revue Claude humaine séparée, comptabilité persistante et plafond de 10 % des tokens |
 | Agent | Fournisseurs interchangeables, outils stricts, budgets, propositions atomiques, exigences protégées et traces masquées |
 

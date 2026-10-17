@@ -35,6 +35,12 @@ scripted demo builds an empty generic board to exercise the workflow; it does
 not design the requested circuit or connect to a model. For real Qwen setup,
 resuming a project and optional Claude reviews, see the [studio guide](docs/studio.md).
 
+Use `--review-patches` for human decisions over validated patch batches and
+`--hierarchical` for one KiCad sheet per block. Immutable design versions support
+read-only semantic comparison. See [change review](docs/reviewing-changes.md),
+[hierarchical schematics](docs/hierarchical-schematics.md) and
+[declared decoupling rules with actual pad measurements](docs/decoupling.md).
+
 The engineering CLI remains available:
 
 ```sh

@@ -43,7 +43,7 @@ def configured_manager(args):
         claude = ClaudeProvider(config, ledger=TokenLedger(args.project))
     return ProjectManager(args.project, provider,
         budget=Budget(max_steps=args.max_steps, max_tokens=args.max_tokens),
-        bindings=args.bindings, claude=claude)
+        bindings=args.bindings, claude=claude, hierarchical=args.hierarchical, review_patches=args.review_patches)
 
 
 def launch_studio(args) -> int:

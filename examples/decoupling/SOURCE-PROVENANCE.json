@@ -1,0 +1,70 @@
+{
+  "license_sources": [
+    {
+      "file": "KICAD-LIBRARIES-LICENSE.md",
+      "sha256": "45d2bce75e5a4208f5afb01b8fb2c406e700371c4fe2b5f5cd5c443d46db4d8f",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/a9012d8971ef2ea3243ffc9f19a5b4f153d8b334/LICENSE.md"
+    },
+    {
+      "file": "CC-BY-SA-4.0.txt",
+      "sha256": "00ba11b9a22d453aed299954eaca389d8efef441a4673d84e2dc4ae10ebc7ca5",
+      "upstream_url": "https://gitlab.com/kicad/code/kicad/-/raw/9.0.9/LICENSE.CC-BY-SA-4.0"
+    }
+  ],
+  "schema_version": 1,
+  "sources": [
+    {
+      "alias": "symbol-connectors",
+      "file": "libraries/Connector_Generic.kicad_sym",
+      "license": "CC-BY-SA-4.0 WITH KiCad-Libraries-Exception",
+      "modification": "Extracted only top-level symbol 'Conn_01x02'; library header and selected symbol bytes unchanged. Other symbols omitted.",
+      "repository": "https://gitlab.com/kicad/libraries/kicad-symbols",
+      "selected_symbol": "Conn_01x02",
+      "sha256": "1f090506088e197b30f25a0658ed5e551da7395712a69103bdeb93bf79560028",
+      "upstream_commit": "a9012d8971ef2ea3243ffc9f19a5b4f153d8b334",
+      "upstream_path": "Connector_Generic.kicad_sym",
+      "upstream_sha256": "c44a0a561694b37a58027539b4e215067f64b5789cd7855bc001890dc484d51b",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/a9012d8971ef2ea3243ffc9f19a5b4f153d8b334/Connector_Generic.kicad_sym"
+    },
+    {
+      "alias": "footprint-header",
+      "file": "libraries/PinHeader_1x02_P2.54mm_Vertical.kicad_mod",
+      "license": "CC-BY-SA-4.0 WITH KiCad-Libraries-Exception",
+      "modification": "Unmodified exact upstream file bytes.",
+      "repository": "https://gitlab.com/kicad/libraries/kicad-footprints",
+      "selected_symbol": null,
+      "sha256": "ec752bbcecf855e3d852409e516965b03a5a461abf45002765cb482266cdf973",
+      "upstream_commit": "e515f1c3213317d436e492c8c06620ef4caca84e",
+      "upstream_path": "Connector_PinHeader_2.54mm.pretty/PinHeader_1x02_P2.54mm_Vertical.kicad_mod",
+      "upstream_sha256": "ec752bbcecf855e3d852409e516965b03a5a461abf45002765cb482266cdf973",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-footprints/-/raw/e515f1c3213317d436e492c8c06620ef4caca84e/Connector_PinHeader_2.54mm.pretty/PinHeader_1x02_P2.54mm_Vertical.kicad_mod"
+    },
+    {
+      "alias": "symbol-device",
+      "file": "libraries/Device.kicad_sym",
+      "license": "CC-BY-SA-4.0 WITH KiCad-Libraries-Exception",
+      "modification": "Extracted only top-level symbol 'C'; library header and selected symbol bytes unchanged. Other symbols omitted.",
+      "repository": "https://gitlab.com/kicad/libraries/kicad-symbols",
+      "selected_symbol": "C",
+      "sha256": "d5c86d42439e183d0dc7f38f004d3c0aacbeb5612cfc1f24e96a7fc7558f9224",
+      "upstream_commit": "a9012d8971ef2ea3243ffc9f19a5b4f153d8b334",
+      "upstream_path": "Device.kicad_sym",
+      "upstream_sha256": "972f851ebf7c10dfe97eefd5d847406154b18ee6158013bd19165477d6364abd",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/a9012d8971ef2ea3243ffc9f19a5b4f153d8b334/Device.kicad_sym"
+    },
+    {
+      "alias": "footprint-c0603",
+      "file": "libraries/C_0603_1608Metric.kicad_mod",
+      "license": "CC-BY-SA-4.0 WITH KiCad-Libraries-Exception",
+      "modification": "Unmodified exact upstream file bytes.",
+      "repository": "https://gitlab.com/kicad/libraries/kicad-footprints",
+      "selected_symbol": null,
+      "sha256": "bd6bc0e5c5017916a9b41e3e85a2109b033a5b4c141c47234c43351f299b1f51",
+      "upstream_commit": "e515f1c3213317d436e492c8c06620ef4caca84e",
+      "upstream_path": "Capacitor_SMD.pretty/C_0603_1608Metric.kicad_mod",
+      "upstream_sha256": "bd6bc0e5c5017916a9b41e3e85a2109b033a5b4c141c47234c43351f299b1f51",
+      "upstream_url": "https://gitlab.com/kicad/libraries/kicad-footprints/-/raw/e515f1c3213317d436e492c8c06620ef4caca84e/Capacitor_SMD.pretty/C_0603_1608Metric.kicad_mod"
+    }
+  ],
+  "upstream_release": "9.0.0"
+}

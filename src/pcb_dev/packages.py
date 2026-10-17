@@ -271,6 +271,16 @@ def instantiate_block(package: BlockPackage, *, instance_id: str, reference_pref
         block_data["depends_on"] = [_replace_path(path, old_root, instance_id) for path in block_data["depends_on"]]
         resources = block_data["resources"]
         _remap_resource_paths(resources, old_root, instance_id)
+        if "decoupling" in resources:
+            rules = resources["decoupling"]
+            if type(rules) is not list:
+                raise PackageError("resources.decoupling must be an array")
+            for rule in rules:
+                if type(rule) is not dict or any(type(rule.get(key)) is not str or not rule[key]
+                                                 for key in ("power_net", "return_net")):
+                    raise PackageError("decoupling rules require explicit power_net and return_net")
+                for key in ("power_net", "return_net"):
+                    rule[key] = remap_net(rule[key])
         reservations = resources.get("i2c", [])
         entries = [reservations] if type(reservations) is dict else reservations
         if type(entries) is list:

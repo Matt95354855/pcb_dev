@@ -319,7 +319,7 @@ def _identities(tree: list, path: str) -> None:
 
 
 def _footprint(path: str, binding: BoundComponent, pins: dict, net_codes: dict,
-               name: str, index: int) -> list:
+               name: str, index: int, schematic_path: str | None = None) -> list:
     component = binding.component
     position = component.position
     x = position.x_mm if position else 10 + index % 5 * 12
@@ -329,7 +329,7 @@ def _footprint(path: str, binding: BoundComponent, pins: dict, net_codes: dict,
     footprint[1] = Quoted(binding.footprint_id)
     _remove(footprint, "version", "generator", "generator_version", "at", "uuid", "tstamp", "path", "sheetfile", "sheetname", "model")
     footprint.extend([["at", _n(x), _n(y), _n(rotation)], ["uuid", _uid(path + ":footprint")],
-                      ["path", Quoted("/" + _uid(name + ":schematic") + "/" + _uid(path + ":symbol"))]])
+                      ["path", Quoted((schematic_path or "/" + _uid(name + ":schematic")) + "/" + _uid(path + ":symbol"))]])
     attr = _one(footprint, "attr")
     if attr is None:
         attr = ["attr"]
@@ -380,7 +380,7 @@ def _footprint(path: str, binding: BoundComponent, pins: dict, net_codes: dict,
     return footprint
 
 
-def _board(design: Design, items: list, net_codes: dict) -> list:
+def _board(design: Design, items: list, net_codes: dict, sheet_plan=None) -> list:
     layers = [["0", Quoted("F.Cu"), "signal"]]
     if design.board.layers == 4:
         layers += [["4", Quoted("In1.Cu"), "signal"], ["6", Quoted("In2.Cu"), "signal"]]
@@ -397,11 +397,13 @@ def _board(design: Design, items: list, net_codes: dict) -> list:
     root.append(["gr_rect", ["start", "0", "0"], ["end", _n(design.board.width_mm), _n(design.board.height_mm)],
                  ["stroke", ["width", "0.05"], ["type", "solid"]], ["fill", "none"], ["layer", Quoted("Edge.Cuts")],
                  ["uuid", _uid(design.name + ":outline")]])
-    root.extend(_footprint(path, binding, pins, net_codes, design.name, index) for index, (path, binding, pins) in enumerate(items))
+    root.extend(_footprint(path, binding, pins, net_codes, design.name, index,
+                           sheet_plan.owner(path).instance_path if sheet_plan else None)
+                for index, (path, binding, pins) in enumerate(items))
     return root
 
 
-def _netlist(design: Design, stem: str, items: list, net_codes: dict) -> str:
+def _netlist(design: Design, stem: str, items: list, net_codes: dict, sheet_plan=None) -> str:
     root = ET.Element("export", version="E")
     document = ET.SubElement(root, "design")
     ET.SubElement(document, "source").text = stem + ".kicad_sch"
@@ -414,7 +416,9 @@ def _netlist(design: Design, stem: str, items: list, net_codes: dict) -> str:
         ET.SubElement(node, "footprint").text = binding.footprint_id
         namespace, shortname = _parts(binding.symbol_id)
         ET.SubElement(node, "libsource", lib=namespace, part=shortname)
-        ET.SubElement(node, "sheetpath", names="/", tstamps="/" + _uid(design.name + ":schematic") + "/")
+        sheet = sheet_plan.owner(path) if sheet_plan else None
+        ET.SubElement(node, "sheetpath", names=sheet.human_path if sheet else "/",
+                      tstamps=sheet.netlist_path if sheet else "/" + _uid(design.name + ":schematic") + "/")
         ET.SubElement(node, "tstamps").text = _uid(path + ":symbol")
     parts = ET.SubElement(root, "libparts")
     definitions = {binding.symbol_id: pins for _, binding, pins in items}
@@ -451,26 +455,39 @@ def _project(stem: str) -> dict:
     }
 
 
-def generate_bound(bound: BoundDesign, output_dir: Path) -> dict[str, Path]:
+def generate_bound(bound: BoundDesign, output_dir: Path, *, hierarchical: bool = False) -> dict[str, Path]:
     """Generate a library draft with local, pinned two-dimensional definitions.
 
     Caller publishes this directory atomically and copies captured original
     sources/licenses. Additional returned paths cover portable local libraries.
     """
+    if type(hierarchical) is not bool:
+        raise LibraryGenerationError("hierarchical must be an explicit host boolean")
     design, items = _validated(bound)
     name = design.name
     stem = re.sub(r"[^A-Za-z0-9_-]+", "_", name).strip("_")[:80] or "pcb_dev"
+    sheet_plan = None
+    if hierarchical:
+        from ..hierarchy import plan_sheets
+        sheet_plan = plan_sheets(design, stem, _uid(name + ":schematic"))
     net_codes = {net: index for index, net in enumerate(sorted({net for _, binding, _ in items for net in binding.component.pins.values()}), 1)}
     content, symbols, footprints = _library_files(items)
     content.update({
-        "board": (stem + ".kicad_pcb", dumps(_board(design, items, net_codes)) + "\n"),
+        "board": (stem + ".kicad_pcb", dumps(_board(design, items, net_codes, sheet_plan)) + "\n"),
         "schematic": (stem + ".kicad_sch", dumps(_schematic(name, stem, items)) + "\n"),
-        "netlist": (stem + ".net", _netlist(design, stem, items, net_codes)),
+        "netlist": (stem + ".net", _netlist(design, stem, items, net_codes, sheet_plan)),
         "symbol_table": ("sym-lib-table", dumps(["sym_lib_table", ["version", "7"], *symbols]) + "\n"),
         "footprint_table": ("fp-lib-table", dumps(["fp_lib_table", ["version", "7"], *footprints]) + "\n"),
         "project": (stem + ".kicad_pro", json.dumps(_project(stem), sort_keys=True, indent=2) + "\n"),
         "rules": (stem + ".kicad_dru", '(version 1)\n(rule "PCBDev illustrative minimums - verify manufacturer stackup"\n  (constraint clearance (min 0.2mm))\n  (constraint track_width (min 0.25mm)))\n'),
     })
+    if sheet_plan:
+        from ..hierarchy import assemble_sheet
+        for sheet in sheet_plan.sheets:
+            local = [(path, binding, pins) for path, binding, pins in items
+                     if path.rsplit(".", 1)[0] == sheet.block_path]
+            tree = assemble_sheet(_schematic(name, stem, local), sheet, sheet_plan)
+            content[sheet.key] = (sheet.filename, dumps(tree) + "\n")
     manifest = {"schema_version": 1, "generator": "pcb_dev", "kind": "library-draft",
                 "marker": LIBRARY_DRAFT_MARKER, "fabrication_ready": False, "routed": False, "qualified": False,
                 "design_sha256": design.fingerprint(), "provenance": deepcopy(bound.provenance),
@@ -481,6 +498,8 @@ def generate_bound(bound: BoundDesign, output_dir: Path) -> dict[str, Path]:
                                for path, binding, _ in items],
                 "artifacts": {key: {"file": filename, "sha256": hashlib.sha256(text.encode()).hexdigest()}
                               for key, (filename, text) in sorted(content.items())}}
+    if sheet_plan:
+        manifest["hierarchy"] = sheet_plan.metadata()
     content["manifest"] = ("generation-manifest.json", json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + "\n")
     destination = Path(output_dir)
     if destination.is_symlink():

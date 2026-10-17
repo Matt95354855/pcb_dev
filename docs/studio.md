@@ -101,6 +101,15 @@ de cache ; le détail de création à cinq minutes/une heure n'est pas additionn
 seconde fois. Ce garde-fou local n'est pas une
 garantie de facturation distante. Voir la [politique complète](claude-policy.md).
 
+## Examiner les corrections et comparer les versions
+
+Ajouter `--review-patches` pour le mode de revue humaine. Les corrections sont
+validées sur copie et présentées avec un diff avant toute application ; un clic
+humain accepte le hash exact du lot. Sans ce mode, les corrections transactionnelles
+automatiques restent disponibles. Voir [le guide de revue et versions](reviewing-changes.md).
+`--hierarchical` configure les feuilles KiCad par bloc, avec les mêmes bibliothèques
+et contrôles. Voir [la hiérarchie et ses preuves](hierarchical-schematics.md).
+
 ## Persistance et reprise
 
 Relancer la même commande avec le même `--project` reprend le projet. La conversation,

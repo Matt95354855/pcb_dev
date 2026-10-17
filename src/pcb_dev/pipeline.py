@@ -87,10 +87,12 @@ def _bundle_libraries(bound, output: Path) -> None:
 
 
 def build_preview(source: str | Path, output: str | Path, *, bindings: str | Path | None = None,
-                  require_physical_ports: bool = False) -> dict:
+                  require_physical_ports: bool = False, hierarchical: bool = False) -> dict:
     from .backends import generate
     from .expressions import resolve_parameters
 
+    if type(hierarchical) is not bool:
+        raise BuildError("hierarchical must be an explicit host boolean")
     source, output = Path(source).resolve(), Path(output).absolute()
     if output.is_symlink():
         raise BuildError("Output must not be a symlink")
@@ -129,11 +131,11 @@ def build_preview(source: str | Path, output: str | Path, *, bindings: str | Pat
             raise BuildError(f"Unknown manufacturer profile: {design.board.manufacturer}")
         atomic_write(temporary / "manufacturer-profile.json", json_text(profile.to_dict()))
         if bound is None:
-            generated = generate(raw, temporary / "kicad")
+            generated = generate(raw, temporary / "kicad", hierarchical=hierarchical)
         else:
             from .backends import generate_bound
             _bundle_libraries(bound, temporary / "libraries")
-            generated = generate_bound(bound, temporary / "kicad")
+            generated = generate_bound(bound, temporary / "kicad", hierarchical=hierarchical)
         # Do not persist machine-specific absolute output paths in a reproducible build.
         generated = {key: str(Path(path).relative_to(temporary)) for key, path in generated.items()}
         lock = {"schema_version": 1, "pcb_dev_version": __version__, "kind": kind,
@@ -142,6 +144,8 @@ def build_preview(source: str | Path, output: str | Path, *, bindings: str | Pat
                 "native_checks": {"erc": "not_run", "drc": "not_run"},
                 "fabrication_ready": False, "generated": generated,
                 "blocks": {path: block.version for path, block in design.walk_blocks()}}
+        if hierarchical:
+            lock["schematic_layout"] = "hierarchical-global-nets"
         if bound is not None:
             lock["libraries"] = bound.provenance
             lock["bundled_bindings"] = "libraries/bindings.json"

@@ -1,0 +1,36 @@
+{
+  "components": {
+    "board.load.decaps.c1": {
+      "footprint_library": "footprint-c0603",
+      "no_connect_pins": [],
+      "symbol_id": "Device:C",
+      "symbol_library": "symbol-device",
+      "symbol_name": "C",
+      "unit": 1
+    },
+    "board.load.j2": {
+      "footprint_library": "footprint-header",
+      "no_connect_pins": [],
+      "symbol_id": "Connector_Generic:Conn_01x02",
+      "symbol_library": "symbol-connectors",
+      "symbol_name": "Conn_01x02",
+      "unit": 1
+    },
+    "board.source.j1": {
+      "footprint_library": "footprint-header",
+      "no_connect_pins": [],
+      "symbol_id": "Connector_Generic:Conn_01x02",
+      "symbol_library": "symbol-connectors",
+      "symbol_name": "Conn_01x02",
+      "unit": 1
+    }
+  },
+  "licenses": [
+    "ATTRIBUTION.md",
+    "KICAD-LIBRARIES-LICENSE.md",
+    "CC-BY-SA-4.0.txt",
+    "SOURCE-PROVENANCE.json"
+  ],
+  "registry": "registry.json",
+  "schema_version": 1
+}

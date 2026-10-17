@@ -7,7 +7,7 @@ avec validation humaine du brief et reprise persistante.
 Voir la [vision détaillée](prompt-first.md).
 
 Référence : « Outil de création de PCB — Todolist complète », fournie au démarrage.
-État de la version **0.4.0 alpha**, au 15 octobre 2026. Les numéros ci-dessous
+État de la version **0.5.0 alpha**, au 17 octobre 2026. Les numéros ci-dessous
 reprennent cette liste pour permettre une reprise précise.
 
 **Livré** décrit le comportement logiciel disponible et testé. **Partiel**
@@ -20,7 +20,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | IDs | État | Preuve / suite |
 | --- | --- | --- |
 | A1–A5 | Livré pour l'alpha | Petites équipes, basse tension 2–4 couches, KiCad, Python, JSON/CLI et revue locale ; ADR dans architecture.md |
-| A6 | À faire | Analyse comparative détaillée du code atopile/tscircuit |
+| A6 | Livré pour étude ciblée | [Code et docs atopile/tscircuit épinglés, décisions et limites](architecture-comparison.md) ; pas de benchmark physique comparatif |
 | A7 | Livré | Packaging, licence MIT, tests, conventions de contribution et workflows CI |
 | A8 | Livré pour versions testées | Diagnostic et conteneurs épinglés ; smoke natif 9.0.9/10.0.2 passé sur la base 0.2.0, incréments testés séparément |
 | A9 | Livré comme critères | Reproductibilité du modèle ; jalon physique ERC/DRC zéro encore ouvert |
@@ -33,7 +33,8 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | B7–B8 | Partiel | Héritage, équations sûres, contraintes et tolérances ; pas de solveur dimensionnel ni propagation implicite vers les champs physiques |
 | B9 | Partiel | Sélection locale par paramètres, statut et stock déclaré ; pas de fournisseurs temps réel |
 | B10–B11 | Livré pour paquets locaux | Instanciation avec préfixes nets/références et variantes fit/DNP |
-| B12–B13 | À faire | Schéma réellement hiérarchique et réutilisation de placement/routage qualifié |
+| B12 | Partiel | Feuilles et instances KiCad par bloc, nets globaux et fermeture vérifiée ; interfaces de feuilles et réutilisation multi-instance à ajouter |
+| B13 | À faire | Réutilisation de placement/routage qualifié |
 | B14 | Livré | Gel contextuel détectant changements hérités, amont et connexions |
 | B15 | Partiel | Exemples alimentation/MCU/LED et circuits passifs ; bibliothèque de blocs qualifiés à construire |
 | B16 | Partiel | Paquets JSON locaux, versions exactes, SHA-256 et lockfile ; registre distant/publication à faire |
@@ -48,7 +49,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | C2–C3 | Partiel | Budgets de courant, calculs déclarés, ordre/délais de séquencement ; comportement réel/échauffement à simuler |
 | C4 | Partiel | Ports requis, réalisation explicite par pins locales, absence de source et conflits ; pull-ups/pinmux/datasheets à compléter |
 | C5 | Partiel | Adresses I²C ; pinmux MCU/DMA/timers à implémenter |
-| C6 | À faire | Règles de découplage par vraie broche et distance de placement |
+| C6 | Partiel | Règles explicites par broche, capacité/rating et nets ; couverture déclarée, aucune datasheet ou exigence manquante inventée |
 | C7 | Livré sur limites fournies | Ratings tension/courant/puissance avec déclassement déclaré |
 | C8–C9 | À faire | Ancrage datasheet et revue IA spécialisée de conception |
 | C10 | Partiel | Stock local explicite/absent, jamais inventé ; connecteurs fournisseurs à ajouter |
@@ -75,7 +76,7 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 
 | IDs | État | Preuve / suite |
 | --- | --- | --- |
-| E1–E2 | Partiel | Schéma plat autonome générique ou vrais symboles épinglés ; hiérarchie et mise en page avancée à faire |
+| E1–E2 | Partiel | Schéma plat ou hiérarchique autonome générique ou épinglé ; placement de feuilles borné, mise en page avancée à compléter |
 | E3 | Livré | Noms explicites stables de nets globaux |
 | E4 | Partiel | Références explicites stables ; annotation automatique à ajouter |
 | E5 | À faire | Import d'un schéma en arbre de blocs |
@@ -95,7 +96,8 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | G6 | Partiel | Formule externe IPC-2221 documentée ; pas de solveur IPC-2152 ni validation du cuivre réel |
 | G7 | À faire | Paires différentielles/impédance/longueurs |
 | G8 | Partiel | DSN → Freerouting épinglé → SES ; export DSN depuis KiCad et import SES non automatisés |
-| G9–G12 | À faire | Routage priorisé, plans de masse/vias, placement découplage et détails fabricant |
+| G9–G10, G12 | À faire | Routage priorisé, plans de masse/vias et détails fabricant |
+| G11 | Partiel | Proximité des pads électriques réels avec bibliothèques épinglées ; retour de masse, cuivre et induction de boucle à qualifier |
 | G13 | Partiel | Textes d'aperçu stables ; règles de sérigraphie complètes à faire |
 | G14–G16 | À faire | Resynchronisation manuelle, optimisation de routage et layouts réutilisables |
 | H1–H2 | Partiel | Profils conservateurs JLCPCB/PCBWay/OSH Park ; aucune révision fournisseur certifiée |
@@ -122,7 +124,9 @@ couvert par un autre module. Les tests unitaires ne valident pas une carte physi
 | --- | --- | --- |
 | J1–J4 | Partiel | Studio conversationnel, brief/plan/contrôles, visionneuse hors ligne et aperçu de centres ; édition CAO interactive à faire |
 | J5 | Partiel | Fichiers natifs exportables, aperçu de centres ; pas de viewer CAO intégré complet |
-| J6–J8 | Partiel | Manager borné, brief approuvé par hash, corrections transactionnelles et audit ; diff visuel de modifications à faire |
+| J6 | Partiel | Manager borné et brief approuvé ; vrai modèle Qwen à qualifier |
+| J7 | Livré pour les outils actuels | Revue optionnelle par lots, acceptation/rejet humain par hash, contexte périmé refusé et décisions auditées |
+| J8 | Partiel | Versions immuables et diff sémantique dans le studio ; restauration de version sous contraintes à ajouter |
 | J9 | Livré pour le périmètre alpha | CLI checks/build/graph/inspect/archives/paquets/agents/adaptateurs |
 | J10–J11 | À faire | Extension VS Code et collaboration |
 | K1–K3 | Partiel | Tests logiciels, reproductibilité et matrice native 9/10 ; cartes réelles de référence à qualifier |

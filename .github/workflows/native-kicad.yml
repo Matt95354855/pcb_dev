@@ -9,7 +9,11 @@ on:
       - 'tests/test_bindings.py'
       - 'tests/test_library_generation.py'
       - 'tests/test_native_library_contract.py'
+      - 'tests/test_hierarchy*.py'
+      - 'tests/test_decoupling*.py'
+      - 'tests/test_native_validation.py'
       - 'examples/library_divider/**'
+      - 'examples/decoupling/**'
       - 'examples/rc_filter.json'
       - 'examples/voltage_divider.json'
       - '.github/workflows/native-kicad.yml'
@@ -21,7 +25,11 @@ on:
       - 'tests/test_bindings.py'
       - 'tests/test_library_generation.py'
       - 'tests/test_native_library_contract.py'
+      - 'tests/test_hierarchy*.py'
+      - 'tests/test_decoupling*.py'
+      - 'tests/test_native_validation.py'
       - 'examples/library_divider/**'
+      - 'examples/decoupling/**'
       - 'examples/rc_filter.json'
       - 'examples/voltage_divider.json'
       - '.github/workflows/native-kicad.yml'
@@ -62,6 +70,10 @@ jobs:
         run: python3 -m pcb_dev.backends.smoke_no_connect --output build/native-no-connect
       - name: Prompt, human brief approval, persistent manager and real KiCad tools
         run: python3 -m pcb_dev.backends.smoke_project --engine kicad --output build/native-project
+      - name: Hierarchical sheets, closure hashes and actual native connectivity
+        run: python3 -m pcb_dev.backends.smoke_hierarchy --output build/native-hierarchy
+      - name: Actual pinned capacitor pads and decoupling layout evidence
+        run: python3 -m pcb_dev.backends.smoke_decoupling --output build/native-decoupling
       - name: Preserve native reports and outputs
         if: always()
         uses: actions/upload-artifact@v4
@@ -73,6 +85,8 @@ jobs:
             build/native-physical-ports
             build/native-no-connect
             build/native-project
+            build/native-hierarchy
+            build/native-decoupling
           if-no-files-found: warn
           retention-days: 14
 

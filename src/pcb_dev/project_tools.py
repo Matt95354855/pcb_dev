@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Any
 
 from .agent import (AgentHarness, ToolCall, ToolSchema, _arguments, _preserves,
-                    _protect_requirements, _validate_operations)
+                    _validate_operations)
 from .checks import check_design
 from .model import Design
 from .project_store import ProjectError, clone, digest
 from .providers import _schema
-from .transactions import apply_patch, atomic_write_json
+from .transactions import atomic_write_json
 
 
 def _object(properties: dict, required=()) -> dict:
@@ -91,7 +91,7 @@ def _component_requirements(before, after):
     # remain possible while these existing declarations stay authoritative.
     protected = {"voltage_rating_v", "applied_voltage_v", "current_rating_ma", "applied_current_ma",
                  "power_rating_w", "power_dissipation_w", "derating_factor", "temperature_min_c",
-                 "temperature_max_c", "operating_temperature_c"}
+                 "temperature_max_c", "operating_temperature_c", "capacitance_f"}
     for path, component in walk_components(before):
         current = components.get(path)
         if current is None:
@@ -110,6 +110,8 @@ def _design(state: dict) -> Design:
 def _preflight(state: dict, design: Design) -> dict:
     state["design"] = design.to_dict()
     state["preflight"] = check_design(design).to_dict()
+    from .reviews import mark_stale
+    mark_stale(state)
     # Old engineering results are explicitly stale after any canonical change.
     for key in ("native_evidence", "simulation_evidence"):
         evidence = state.get(key)
@@ -134,54 +136,17 @@ def _files(store, state: dict, directory: Path, label: str) -> None:
 
 
 def _native(design: Design, board: Path, schematic: Path, output: Path, *, bindings=None) -> dict:
-    from .backends.kicad import KiCadBackend
-    from .parity import check_parity
-    from .reports import CheckReport, Issue, gate_reports
-
-    output.mkdir(parents=True)
-    preflight = check_design(design)
-    backend = KiCadBackend(timeout=60)
-    evidence = backend.check(board, schematic, output / "native")
-    reports = [preflight]
-    for stage in ("erc", "drc"):
-        item = evidence[stage]
-        completed = bool(item.get("executed") and item.get("native_report") is not None)
-        report = CheckReport(stage, metadata={"completed": completed, "native": completed,
-                                            "design_hash": design.fingerprint(), "evidence": item})
-        if item.get("status") != "passed":
-            report.add(Issue(f"{stage}.{item.get('status', 'failed')}", "blocker", item.get("reason") or "Native check failed"))
-        reports.append(report)
-    exported = backend.export_netlist(schematic, output / "schematic-netlist.xml")
-    if exported.get("status") == "passed":
-        if bindings is None:
-            mapping = check_parity(design, exported["path"], board)
-        else:
-            from .bindings import load_bindings
-            from .bound_parity import check_bound_parity
-            mapping = check_bound_parity(load_bindings(design, bindings), exported["path"], board)
-        mapping.metadata["native_netlist_export"] = exported
-        for condition, code, message in (
-            (mapping.metadata.get("netlist_sha256") != exported.get("output_sha256"), "netlist_changed", "Exported netlist changed before parity"),
-            (exported.get("input_sha256") != evidence["erc"].get("input_sha256"), "schematic_changed", "Schematic changed between native checks"),
-            (mapping.metadata.get("board_sha256") != evidence["drc"].get("input_sha256"), "board_changed", "Board changed between native checks"),
-        ):
-            if condition:
-                mapping.add(Issue("parity." + code, "blocker", message))
-    else:
-        mapping = CheckReport("model-parity", metadata={"completed": False})
-        mapping.add(Issue("parity.netlist_unverified", "blocker", exported.get("reason") or "Native netlist is unavailable"))
-    reports.append(mapping)
-    gate = gate_reports(reports, required_stages=("preflight", "erc", "drc", "model-parity"), design_hash=design.fingerprint())
-    result = {"design_sha256": design.fingerprint(), "status": "passed" if not gate.blocking else "blocked",
-              "validation_passed": not gate.blocking, "fabrication_ready": False,
-              "reports": [report.to_dict() for report in reports], "gate": gate.to_dict()}
-    atomic_write_json(result, output / "checks.json")
+    from .native_validation import run_native_validation
+    result, _ = run_native_validation(design, board, schematic, output, bindings=bindings)
     return result
 
 
 class ProjectTools:
-    def __init__(self, store, *, bindings=None):
+    def __init__(self, store, *, bindings=None, hierarchical=False):
+        if type(hierarchical) is not bool:
+            raise ProjectError("hierarchical must be a boolean")
         self.store = store
+        self.hierarchical = hierarchical
         # Configuration belongs to the host, never to a model argument.
         self.bindings = Path(bindings).resolve() if bindings is not None else None
 
@@ -191,6 +156,9 @@ class ProjectTools:
         args = _arguments(call)
         _schema(args, _BY_NAME[call.name].parameters)
         name = call.name
+        from .reviews import pending
+        if pending(state):
+            raise ProjectError("A patch awaits a human decision before further engineering tools")
         if name == "read_design_contract":
             return design_contract(), False
         if name == "propose_brief":
@@ -200,6 +168,8 @@ class ProjectTools:
             proposed["hash"] = digest(args)
             proposed["approved"] = state.get("approved_brief_hash") == proposed["hash"]
             state["brief"] = proposed
+            from .reviews import mark_stale
+            mark_stale(state)
             state["status"] = "awaiting_input" if args["questions"] else "brief_proposed"
             return {"brief": proposed, "human_approval_required": not proposed["approved"]}, False
         if name == "ask_questions":
@@ -209,6 +179,8 @@ class ProjectTools:
                 brief["hash"] = digest(brief)
                 brief["approved"] = False
                 state["brief"] = brief
+            from .reviews import mark_stale
+            mark_stale(state)
             state["pending_questions"] = args["questions"]
             state["status"] = "awaiting_input"
             return {"questions": args["questions"]}, True
@@ -223,7 +195,10 @@ class ProjectTools:
             design = Design.from_dict(args["design"])
             if any(block.frozen or block.frozen_hash is not None for _, block in design.walk_blocks()):
                 raise ProjectError("The model cannot introduce freeze records")
-            return {"created": True, "report": _preflight(state, design)}, False
+            report = _preflight(state, design)
+            from .versions import record_version
+            record_version(self.store, state, source="create_design")
+            return {"created": True, "report": report}, False
         design = _design(state)
         if name == "inspect_design":
             harness = AgentHarness(_NoProvider(), offline=True)
@@ -234,10 +209,15 @@ class ProjectTools:
         _require_approval(state)
         if name == "apply_design_patch":
             operations = _operations(args["operations"])
-            changed = apply_patch(design, operations, prevent_regressions=True)
-            _protect_requirements(design, changed)
-            _component_requirements(design, changed)
-            return {"applied": changed.fingerprint() != design.fingerprint(), "report": _preflight(state, changed)}, False
+            from .reviews import propose_patch, validated_patch
+            if state.get("review_patches", False):
+                proposal = propose_patch(state, operations, args["reason"])
+                return {"applied": False, "human_review_required": True, "proposal": proposal}, True
+            changed = validated_patch(design, operations)
+            report = _preflight(state, changed)
+            from .versions import record_version
+            record_version(self.store, state, source="autonomous_patch")
+            return {"applied": changed.fingerprint() != design.fingerprint(), "report": report}, False
         relative = f"artifacts/r{state['revision'] + 1:06d}-{name}"
         directory = self.store.safe_path(relative, create_parent=True)
         if directory.exists():
@@ -248,7 +228,7 @@ class ProjectTools:
             if source.exists():
                 raise ProjectError("Design revision already exists")
             atomic_write_json(design.to_dict(), source)
-            result = build_preview(source, directory, bindings=self.bindings)
+            result = build_preview(source, directory, bindings=self.bindings, hierarchical=self.hierarchical)
             lock = json.loads((directory / "build-lock.json").read_text(encoding="utf-8"))
             state["latest_build"] = {"relative_path": relative, "design_sha256": design.fingerprint(), "generated": lock["generated"], "kind": result["kind"]}
             result["output"] = relative
